@@ -335,7 +335,7 @@ IpfsApis.forEach(function(ipfsApi) {
         assert.equal(lastItem.payload, 'helloD2')
       }))
 
-      it('joins logs from 4 logs', async(() => {
+      it.only('joins logs from 4 logs', async(() => {
         await(log1.add("helloA1"))
         await(log1.join(log2))
         await(log2.add("helloB1"))
@@ -356,13 +356,14 @@ IpfsApis.forEach(function(ipfsApi) {
         await(log4.add("helloD3"))
         await(log4.add("helloD4"))
         const secondItem = log4.items[1]
-        const lastItem1 = _.last(log4._items)
-        const lastItem2 = _.last(log4.items)
-        assert.equal(log4._currentBatch.length, 2)
-        assert.equal(log4._items.length, 8)
-        assert.equal(secondItem.payload, 'helloD2')
-        assert.equal(lastItem1.payload, 'helloC2')
-        assert.equal(lastItem2.payload, 'helloD4')
+        const lastItem1 = _.last(log4.items)
+        const lastItem2 = log4.items[log4.items.length - 5]
+        // assert.equal(log4._currentBatch.length, 2)
+        // console.log(log4.items)
+        assert.equal(log4.items.length, 10)
+        assert.equal(secondItem.payload, 'helloC2')
+        assert.equal(lastItem1.payload, 'helloD4')
+        assert.equal(lastItem2.payload, 'helloB2')
       }))
 
       it('fetches items from history on join', async(() => {

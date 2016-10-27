@@ -48,8 +48,9 @@ class Log {
   }
 
   join(other) {
+    let st = new Date().getTime()
     if (!other.items) throw new Error("The log to join must be an instance of Log")
-    const newItems = other.items.slice(0, Math.max(this.options.maxHistory, 1))
+    const newItems = take(other.items.reverse(), Math.max(this.options.maxHistory, 1))
     const diff     = differenceWith(newItems, this.items, Entry.compare)
     // TODO: need deterministic sorting for the union
     const final    = unionWith(this._currentBatch, diff, Entry.compare)
@@ -68,6 +69,8 @@ class Log {
         })
     }, { concurrency: 1 }).then((res) => {
       this._heads = Log.findHeads(this)
+      let et = new Date().getTime()
+      console.log("Join took", (et - st) + "ms")
       return flatten(res).concat(diff)
     })
   }

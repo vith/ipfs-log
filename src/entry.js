@@ -5,12 +5,12 @@ module.exports = class Entry {
   // Example:
   //   Entry.create(ipfs, "hello")
   //     .then((entry) => console.log(entry)) // { hash: "Qm...Foo", payload: "hello", next: null }  
-  static create(ipfs, data, next = []) {
+  static create(ipfs, data, next = [null]) {
     if (!ipfs) throw new Error("Entry requires ipfs instance")
 
     // convert single objects to an array and entry objects to single hashes
     let nexts = next !== null && next instanceof Array 
-      ? next.map((e) => e.hash ? e.hash : e) 
+      ? next.map((e) => e && e.hash ? e.hash : e) 
       : [(next !== null && next.hash ? next.hash : next)]
 
     let entry = {
