@@ -5,6 +5,7 @@ const differenceWith = require('lodash.differencewith')
 const flatten = require('lodash.flatten')
 const take = require('lodash.take')
 const Promise = require('bluebird')
+const Crypto = require('orbit-crypto')
 const Entry = require('./entry')
 
 const MaxBatchSize = 10  // How many items to keep per local batch
@@ -35,21 +36,40 @@ class Log {
     }
   }
 
+  get keys() {
+    return this.options.keys.map((k) => k.publicKey)
+  }
+
   add(data) {
     if (this._currentBatch.length >= MaxBatchSize)
       this._commit()
 
-    return Entry.create(this._ipfs, data, this._heads)
+    // return Crypto.getKey(this.id)
+    //   .then((key) => Crypto.sign(key.privateKey, new Buffer(JSON.stringify(data))))
+    //   .then((signed) => {
+    return Entry.createSignedEntry(this._ipfs, data, this.id, this.options.keys[0], this._heads)
       .then((entry) => {
         this._heads = [entry.hash]
         this._currentBatch.push(entry)
         return entry
       })
+      // })
   }
 
   join(other) {
-    if (!other.items) throw new Error("The log to join must be an instance of Log")
+    console.log()
+    console.log("--- join ---")
+    if (!other.items) 
+      throw new Error("The log to join must be an instance of Log")
+
+    // console.log("SIGN", this.keys)
+    // console.log("OTHERSIG", other.keys)
+
+    if (other.keys.map((k) => this.keys.includes(k)).filter((e) => e === true).length === 0)
+      throw new Error("Not allowed to join")
+
     const newItems = other.items.slice(-Math.max(this.options.maxHistory, 1))
+    // console.log("OTHER", other)
     // const newItems = take(other.items.reverse(), Math.max(this.options.maxHistory, 1))
     const diff     = differenceWith(newItems, this.items, Entry.compare)
     // TODO: need deterministic sorting for the union
@@ -62,6 +82,7 @@ class Log {
     // Fetch history
     return Promise.map(nexts, (f) => {
       let all = this.items.map((a) => a.hash)
+      console.log(all)
       return this._fetchRecursive(this._ipfs, f, all, this.options.maxHistory - nexts.length, 0)
         .then((history) => {
           history.forEach((b) => this._insert(b))
@@ -107,9 +128,20 @@ class Log {
 
   static getIpfsHash(ipfs, log) {
     if (!ipfs) throw new Error("Ipfs instance not defined")
-    const data = new Buffer(JSON.stringify(log.snapshot))
-    return ipfs.object.put(data)
-      .then((res) => res.toJSON().Hash)
+    let snapshot = log.snapshot
+    let signature, key
+    return Crypto.getKey(log.id)
+      .then((keyPair) => key = keyPair)
+      .then(() => Crypto.sign(key.privateKey, new Buffer(JSON.stringify(snapshot))))
+      .then((sig) => signature = sig)
+      .then(() => Crypto.exportKeyToIpfs(ipfs, key.publicKey))
+      .then((pubKeyHash) => {
+        snapshot.sig = signature
+        snapshot.keys = log.keys
+        const data = new Buffer(JSON.stringify(snapshot))
+        return ipfs.object.put(data)
+          .then((res) => res.toJSON().Hash)
+      })
   }
 
   static fromIpfsHash(ipfs, hash, options) {
@@ -120,6 +152,39 @@ class Log {
     return ipfs.object.get(hash, { enc: 'base58' })
       .then((res) => logData = JSON.parse(res.toJSON().Data))
       .then((res) => {
+        console.log()
+        console.log(logData)
+
+        const allowedKeys = options.keys.map((k) => k.publicKey)
+
+        const verifySignature = () => {
+          const d = {
+            id: logData.id,
+            items: logData.items
+          }
+
+          const promises = allowedKeys.map((k) => {
+            return Crypto.importPublicKey(k)
+              .then((key) => Crypto.verify(logData.sig, k, new Buffer(JSON.stringify(d))))
+          })
+
+          Promise.all(promises).then((res) => {
+            console.log("VERIFICATION:")
+            console.log(res)
+          })
+        }
+
+        verifySignature()
+        
+        // console.log("ALLOWED:", allowedKeys)
+        // console.log("OTHER:", logData.keys)
+        // console.log("RES", logData.keys.map((k) => allowedKeys.includes(k)))
+        if (logData.keys.map((k) => allowedKeys.includes(k)).filter((e) => e === true).length === 0)
+          throw new Error("Signing keys don't match")    
+
+        // TODO: verify signature
+ 
+        // if (logData.keys !== options.key.publicKey) throw new Error("Wrong signing key")
         if (!logData.items) throw new Error("Not a Log instance")
         return Promise.all(logData.items.map((f) => Entry.fromIpfsHash(ipfs, f)))
       })
