@@ -2,43 +2,38 @@
 
 const Log   = require('../src/log')
 const Entry = require('../src/entry')
-const IPFS = require('ipfs-daemon')
+// const IPFS = require('ipfs-daemon')
+const IPFS = require('ipfs-daemon/src/ipfs-node-daemon')
 
 // Metrics
 let totalQueries = 0
 let seconds = 0
 let queriesPerSecond = 0
 let lastTenSeconds = 0
-let log
+let ipfs, log
 
 const queryLoop = () => {
-  log.add(totalQueries)
-    .then(() => {
+  Log.append(ipfs, log, totalQueries.toString())
+    .then((res) => {
+      log = res
       totalQueries ++
       lastTenSeconds ++
       queriesPerSecond ++
-      // console.log(".", totalQueries)
-      // process.nextTick(queryLoop)
       setImmediate(queryLoop)
     })
-    .catch((e) => {
-      console.log(e)
-      process.exit(0)
-    })
+    .catch((e) => console.error(e))
 }
 
 let run = (() => {
   console.log("Starting benchmark...")
 
-  const ipfs = new IPFS({
-    IpfsDataDir: '/tmp/ipfs-log-benchmark',
+  ipfs = new IPFS({
     Flags: [], 
     Bootstrap: [] 
   })
 
   ipfs.on('error', (err) => {
     console.error(err)
-    process.exit(1)
   })
 
   ipfs.on('ready', () => {
@@ -51,13 +46,12 @@ let run = (() => {
           throw new Error("Problems!")
         lastTenSeconds = 0
       }
-      console.log(`${queriesPerSecond} queries per second, ${totalQueries} queries in ${seconds} seconds`)
+      console.log(`${queriesPerSecond} queries per second, ${totalQueries} queries in ${seconds} seconds (Entry count: ${log.items.length})`)
       queriesPerSecond = 0
     }, 1000)
 
-    log = new Log(ipfs, 'A')
-    process.nextTick(queryLoop)
-    // queryLoop()
+    log = Log.create(ipfs)
+    setImmediate(queryLoop)
   })
 
 })()

@@ -1,20 +1,31 @@
 'use strict'
 
-module.exports = class Entry {
-  // Returns a Promise<Entry>
-  // Example:
-  //   Entry.create(ipfs, "hello")
-  //     .then((entry) => console.log(entry)) // { hash: "Qm...Foo", payload: "hello", next: null }  
-  static create(ipfs, data, next = []) {
+class Entry {
+  /**
+   * Create an Entry
+   * @param {IPFS} ipfs - An IPFS instance
+   * @param {string} id - The Log ID this entry belongs to
+   * @param {string|Buffer|Object|Array} data - Data of the entry to be added
+   * @param {Array<Entry>} [next=[]] Parents of the entry
+   * @example
+   * const entry = await Entry.create(ipfs, 'ABC', 'hello')
+   * console.log(entry)
+   * // { hash: "Qm...Foo", id: 'ABC', payload: "hello", next: [] }
+   * @returns {Promise<Entry>}
+   */
+  static create(ipfs, id, data = null, next = []) {
     if (!ipfs) throw new Error("Entry requires ipfs instance")
+    if (!id) throw new Error("Entry requires an id")
 
     // convert single objects to an array and entry objects to single hashes
-    let nexts = next !== null && next instanceof Array 
-      ? next.map((e) => e.hash ? e.hash : e) 
+    // let nexts = next !== null && next instanceof Array 
+    let nexts = next !== null && Array.isArray(next)
+      ? next.filter((e) => e !== undefined).map((e) => e.hash ? e.hash : e) 
       : [(next !== null && next.hash ? next.hash : next)]
 
     let entry = {
       hash: null, // "Qm...Foo", we'll set the hash after ipfsfying the data structure, 
+      id: id,
       payload: data, // Can be any JSON.stringifyable data
       next: nexts // Array of IPFS hashes
     }
@@ -26,10 +37,17 @@ module.exports = class Entry {
       })
   }
 
-  // Returns a Promise<String>
-  // Example:
-  //   Entry.toIpfsHash(ipfs, entry)
-  //     .then((hash) => console.log(hash)) // "Qm...Foo"
+  /**
+   * Get the multihash of an Entry
+   * @param {IPFS} [ipfs] An IPFS instance
+   * @param {string|Buffer|Object|Array} [data] Data of the entry to be added
+   * @param {Array<Entry>} [next=[]] Parents of the entry
+   * @example
+   * const hash = await Entry.toIpfsHash(ipfs, entry)
+   * console.log(hash)
+   * // "Qm...Foo"
+   * @returns {Promise<string>}
+   */
   static toIpfsHash(ipfs, entry) {
     if (!ipfs) throw new Error("Entry requires ipfs instance")
     const data = new Buffer(JSON.stringify(entry))
@@ -37,18 +55,25 @@ module.exports = class Entry {
       .then((res) => res.toJSON().multihash)
   }
 
-  // Returns a Promise<Entry>
-  // Example:
-  //   Entry.fromIpfsHash(ipfs, "Qm...Foo")
-  //     .then((entry) => console.log(entry)) // { hash: "Qm...Foo", payload: "hello", next: null }  
+  /**
+   * Create an Entry from a multihash
+   * @param {IPFS} [ipfs] An IPFS instance
+   * @param {string} [hash] Multihash to create an Entry from
+   * @example
+   * const hash = await Entry.fromIpfsHash(ipfs, "Qm...Foo")
+   * console.log(hash)
+   * // { hash: "Qm...Foo", payload: "hello", next: [] }
+   * @returns {Promise<Entry>}
+   */
   static fromIpfsHash(ipfs, hash) {
     if (!ipfs) throw new Error("Entry requires ipfs instance")
     if (!hash) throw new Error("Invalid hash: " + hash)
     return ipfs.object.get(hash, { enc: 'base58' })
-      .then((obj) => {
-        const data = JSON.parse(obj.toJSON().data)
+      .then((obj) => JSON.parse(obj.toJSON().data))
+      .then((data) => {
         const entry = {
           hash: hash,
+          id: data.id,
           payload: data.payload,
           next: data.next
         }
@@ -56,19 +81,32 @@ module.exports = class Entry {
       })
   }
 
-  // Returns a boolean
-  // Example:
-  //   const hasChild = Entry.hasChild(entry1, entry2)
-  //   true|false
+  /**
+   * Check if an entry has another entry as its child
+   * @param {Entry} [entry1] Entry to check from
+   * @param {Entry} [entry2] Child
+   * @returns {boolean}
+   */
   static hasChild(entry1, entry2) {
     return entry1.next.includes(entry2.hash)
   }
 
-  // Returns a boolean
-  // Example:
-  //   const equal = Entry.compare(entry1, entry2)
-  //   true|false
+  /**
+   * Check if an entry equals another entry
+   * @param {Entry} a
+   * @param {Entry} b
+   * @returns {boolean}
+   */
   static compare(a, b) {
     return a.hash === b.hash
   }
+
+  /**
+   * @alias compare
+   */
+  static isEqual(a, b) {
+    return a.hash === b.hash
+  }
 }
+
+module.exports = Entry

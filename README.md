@@ -29,7 +29,6 @@ entry0 <-- entry1 <-- entry2 ...
 
 The module works in **Node.js** and **Browsers**.
 
-
 IPFS Log has a few use cases:
 
 - CRDTs
@@ -324,6 +323,12 @@ Starting benchmark...
 ## Contribute
 
 PRs and [issues](https://github.com/haadcode/ipfs-log/issues) are gladly accepted! Take a look at the open issues, too, to see if there is anything that you could do or someone else has already done. Here are some things I know I need:
+
+### Notes
+
+- Immutable
+- O(1) writes, O(1) reads, O(n) joins
+- Joins can be made constant-time by limiting the join (eg. { limit: 1000 })
 
 ### TODO
 

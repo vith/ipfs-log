@@ -1,6 +1,6 @@
 {
   "name": "ipfs-log",
-  "version": "1.6.0-beta.7",
+  "version": "2.0.0-beta.1",
   "description": "Append-only log for IPFS",
   "main": "src/log.js",
   "author": "Haad",
@@ -15,18 +15,17 @@
   "dependencies": {
     "bluebird": "^3.4.6",
     "lodash.differencewith": "^4.5.0",
-    "lodash.flatten": "^4.4.0",
-    "lodash.take": "^4.1.1",
-    "lodash.unionwith": "^4.6.0"
+    "lodash.take": "^4.1.1"
   },
   "devDependencies": {
     "asyncawait": "^1.0.6",
     "babel-core": "^6.20.0",
     "babel-loader": "^6.2.9",
-    "ipfs-daemon": "^0.3.0-beta.10",
-    "ipfs-test-apis": "^0.1.0-beta.2",
+    "ipfs-daemon": "^0.3.0-beta.13",
     "json-loader": "^0.5.4",
+    "lodash.last": "^3.0.0",
     "mocha": "^3.0.1",
+    "rimraf": "^2.5.4",
     "stream-http": "^2.5.0",
     "webpack": "^2.1.0-beta.28"
   },
