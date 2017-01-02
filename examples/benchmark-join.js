@@ -61,8 +61,8 @@ let run = (() => {
       queriesPerSecond = 0
     }, 1000)
 
-    log1 = Log.create(ipfs, 'A')
-    log2 = Log.create(ipfs, 'B')
+    log1 = Log.create(ipfs)
+    log2 = Log.create(ipfs)
     queryLoop()
   })
 

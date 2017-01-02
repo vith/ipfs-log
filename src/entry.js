@@ -4,28 +4,24 @@ class Entry {
   /**
    * Create an Entry
    * @param {IPFS} ipfs - An IPFS instance
-   * @param {string} id - The Log ID this entry belongs to
    * @param {string|Buffer|Object|Array} data - Data of the entry to be added
    * @param {Array<Entry>} [next=[]] Parents of the entry
    * @example
-   * const entry = await Entry.create(ipfs, 'ABC', 'hello')
+   * const entry = await Entry.create(ipfs, 'hello')
    * console.log(entry)
-   * // { hash: "Qm...Foo", id: 'ABC', payload: "hello", next: [] }
+   * // { hash: "Qm...Foo", payload: "hello", next: [] }
    * @returns {Promise<Entry>}
    */
-  static create(ipfs, id, data = null, next = []) {
+  static create(ipfs, data = null, next = []) {
     if (!ipfs) throw new Error("Entry requires ipfs instance")
-    if (!id) throw new Error("Entry requires an id")
 
     // convert single objects to an array and entry objects to single hashes
-    // let nexts = next !== null && next instanceof Array 
     let nexts = next !== null && Array.isArray(next)
       ? next.filter((e) => e !== undefined).map((e) => e.hash ? e.hash : e) 
       : [(next !== null && next.hash ? next.hash : next)]
 
     let entry = {
       hash: null, // "Qm...Foo", we'll set the hash after ipfsfying the data structure, 
-      id: id,
       payload: data, // Can be any JSON.stringifyable data
       next: nexts // Array of IPFS hashes
     }
@@ -73,7 +69,6 @@ class Entry {
       .then((data) => {
         const entry = {
           hash: hash,
-          id: data.id,
           payload: data.payload,
           next: data.next
         }

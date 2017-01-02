@@ -12,8 +12,12 @@ const dataDir = './ipfs'
 
 let ipfs, ipfsDaemon
 
+// For some reason js-ipfs starts throwing 'libp2p not started yet'
+// if Entry is tested with js-ipfs before testing Log. Only test Entry
+// with Native daemon until that's fixed.
+[IpfsNativeDaemon].forEach((IpfsDaemon) => {
 // [IpfsNodeDaemon].forEach((IpfsDaemon) => {
-[IpfsNodeDaemon, IpfsNativeDaemon].forEach((IpfsDaemon) => {
+// [IpfsNodeDaemon, IpfsNativeDaemon].forEach((IpfsDaemon) => {
 
   describe('Entry', function() {
     this.timeout(60000)
@@ -32,43 +36,42 @@ let ipfs, ipfsDaemon
 
     describe('create', () => {
       it('creates a an empty entry', async(() => {
-        const expectedHash = 'QmWMw3SWqb4cK9awTjpr39bxj966PjLEFtc8XudJoAgd56'
-        const entry = await(Entry.create(ipfs, 'A'))
+        const expectedHash = 'QmV6eNeSZLnJDQcGou6HEiPQxipEgVam3B3onFSNmgpD4i'
+        const entry = await(Entry.create(ipfs))
         assert.equal(entry.hash, expectedHash)
-        assert.equal(entry.id, 'A')
         assert.equal(entry.payload, null)
         assert.equal(entry.next.length, 0)
       }))
 
       it('creates a entry with payload', async(() => {
-        const expectedHash = 'QmYVAKgyD9yhURZRT1Tx1diWsrY1yGbw9sM8QPRvocLhhn'
+        const expectedHash = 'QmTVyxLqh3qZkWZbpxkjX5hd4WXADWDxt2EamFApfYpsRv'
         const payload = 'hello world'
-        const entry = await(Entry.create(ipfs, 'A', payload))
+        const entry = await(Entry.create(ipfs, payload))
         assert.equal(entry.payload, payload)
         assert.equal(entry.next.length, 0)
         assert.equal(entry.hash, expectedHash)
       }))
 
       it('creates a entry with payload and next', async(() => {
-        const expectedHash = 'QmTfrtKieCTyEPzfVQswkxJkfSe8h8RqAmmy7KNmqqBfx1'
+        const expectedHash = 'QmRzyeUuW5F8zxmEgJG3wRPH3i3W7iwPweza7UUHhXfK93'
         const payload1 = 'hello world'
         const payload2 = 'hello again'
-        const entry1 = await(Entry.create(ipfs, 'A', payload1))
-        const entry2 = await(Entry.create(ipfs, 'A', payload2, entry1))
+        const entry1 = await(Entry.create(ipfs, payload1))
+        const entry2 = await(Entry.create(ipfs, payload2, entry1))
         assert.equal(entry2.payload, payload2)
         assert.equal(entry2.next.length, 1)
         assert.equal(entry2.hash, expectedHash)
       }))
 
       it('`next` parameter can be a string', async(() => {
-        const entry1 = await(Entry.create(ipfs, 'A', null))
-        const entry2 = await(Entry.create(ipfs, 'A', null, entry1.hash))
+        const entry1 = await(Entry.create(ipfs, null))
+        const entry2 = await(Entry.create(ipfs, null, entry1.hash))
         assert.equal(typeof entry2.next[0] === 'string', true)
       }))
 
       it('`next` parameter can be an instance of Entry', async(() => {
-        const entry1 = await(Entry.create(ipfs, 'A', null))
-        const entry2 = await(Entry.create(ipfs, 'A', null, entry1))
+        const entry1 = await(Entry.create(ipfs, null))
+        const entry2 = await(Entry.create(ipfs, null, entry1))
         assert.equal(typeof entry2.next[0] === 'string', true)
       }))
 
@@ -90,7 +93,7 @@ let ipfs, ipfsDaemon
 
       it('throws an error if data is not defined', async(() => {
         try {
-          const entry = await(Entry.create(ipfs, 'A'))
+          const entry = await(Entry.create(ipfs))
         } catch(e) {
           assert.equal(e.message, 'Entry requires data')
         }
@@ -99,8 +102,8 @@ let ipfs, ipfsDaemon
 
     describe('toIpfsHash', () => {
       it('returns an ipfs hash', async(() => {
-        const expectedHash = 'QmUegcHudTeVcLGKsKjmBR96ydKx4Neku36mBj4TfgVNv3'
-        const entry = await(Entry.create(ipfs, 'A'))
+        const expectedHash = 'QmVb4xt7ckFFyH3qxGtR4SKo3FcBD5itfPmyTqAjrAzcW3'
+        const entry = await(Entry.create(ipfs))
         const hash = await(Entry.toIpfsHash(ipfs, entry))
         assert.equal(hash, expectedHash)
       }))
@@ -108,11 +111,11 @@ let ipfs, ipfsDaemon
 
     describe('fromIpfsHash', () => {
       it('creates a entry from ipfs hash', async(() => {
-        const expectedHash = 'QmTfrtKieCTyEPzfVQswkxJkfSe8h8RqAmmy7KNmqqBfx1'
+        const expectedHash = 'QmRzyeUuW5F8zxmEgJG3wRPH3i3W7iwPweza7UUHhXfK93'
         const payload1 = 'hello world'
         const payload2 = 'hello again'
-        const entry1 = await(Entry.create(ipfs, 'A', payload1))
-        const entry2 = await(Entry.create(ipfs, 'A', payload2, entry1))
+        const entry1 = await(Entry.create(ipfs, payload1))
+        const entry2 = await(Entry.create(ipfs, payload2, entry1))
         const final = await(Entry.fromIpfsHash(ipfs, entry2.hash))
         assert.equal(final.payload, payload2)
         assert.equal(final.next.length, 1)
@@ -141,17 +144,17 @@ let ipfs, ipfsDaemon
       it('returns true if entry has a child', async(() => {
         const payload1 = 'hello world'
         const payload2 = 'hello again'
-        const entry1 = await(Entry.create(ipfs, 'A', payload1))
-        const entry2 = await(Entry.create(ipfs, 'A', payload2, entry1))
+        const entry1 = await(Entry.create(ipfs, payload1))
+        const entry2 = await(Entry.create(ipfs, payload2, entry1))
         assert.equal(Entry.hasChild(entry2, entry1), true)
       }))
 
       it('returns false if entry does not have a child', async(() => {
         const payload1 = 'hello world'
         const payload2 = 'hello again'
-        const entry1 = await(Entry.create(ipfs, 'A', payload1))
-        const entry2 = await(Entry.create(ipfs, 'A', payload2))
-        const entry3 = await(Entry.create(ipfs, 'A', payload2, entry2))
+        const entry1 = await(Entry.create(ipfs, payload1))
+        const entry2 = await(Entry.create(ipfs, payload2))
+        const entry3 = await(Entry.create(ipfs, payload2, entry2))
         assert.equal(Entry.hasChild(entry2, entry1), false)
         assert.equal(Entry.hasChild(entry3, entry1), false)
         assert.equal(Entry.hasChild(entry3, entry2), true)
@@ -161,16 +164,16 @@ let ipfs, ipfsDaemon
     describe('compare', () => {
       it('returns true if entries are the same', async(() => {
         const payload1 = 'hello world'
-        const entry1 = await(Entry.create(ipfs, 'A', payload1))
-        const entry2 = await(Entry.create(ipfs, 'A', payload1))
+        const entry1 = await(Entry.create(ipfs, payload1))
+        const entry2 = await(Entry.create(ipfs, payload1))
         assert.equal(Entry.compare(entry1, entry2), true)
       }))
 
       it('returns true if entries are not the same', async(() => {
         const payload1 = 'hello world1'
         const payload2 = 'hello world2'
-        const entry1 = await(Entry.create(ipfs, 'A', payload1))
-        const entry2 = await(Entry.create(ipfs, 'A', payload2))
+        const entry1 = await(Entry.create(ipfs, payload1))
+        const entry2 = await(Entry.create(ipfs, payload2))
         assert.equal(Entry.compare(entry1, entry2), false)
       }))
     })
