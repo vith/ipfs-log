@@ -14,8 +14,8 @@ const dataDir = './ipfs'
 
 let ipfs, ipfsDaemon
 
-// [IpfsNodeDaemon].forEach((IpfsDaemon) => {
-[IpfsNodeDaemon, IpfsNativeDaemon].forEach((IpfsDaemon) => {
+[IpfsNodeDaemon].forEach((IpfsDaemon) => {
+// [IpfsNodeDaemon, IpfsNativeDaemon].forEach((IpfsDaemon) => {
 
   describe.only('Log', function() {
     this.timeout(60000)
@@ -222,6 +222,36 @@ let ipfs, ipfsDaemon
             assert.equal(e.message, 'Unexpected token h in JSON at position 0')
           }
         }))
+
+        it('onProgress callback is fired for each entry', async(() => {
+          const amount = 100
+          let log = Log.create(ipfs)
+          for (let i = 0; i < amount; i ++) {
+            log = await(Log.append(ipfs, log, i.toString()))
+          }
+
+          const items = log.items
+          let i = 0
+          let prevDepth = 0
+          const callback = (hash, entry, parent, depth) => {
+            assert.notEqual(entry, null)
+            assert.equal(hash, items[items.length - i - 1].hash)
+            assert.equal(entry.hash, items[items.length - i - 1].hash)
+            assert.equal(entry.payload, items[items.length - i - 1].payload)
+            assert.equal(depth, i)
+
+            if (i > 0) {
+              assert.equal(parent.payload, items[items.length - i].payload)
+            }
+
+            i ++
+            prevDepth = depth
+          }
+
+          const hash = await(Log.getIpfsHash(ipfs, log))
+          const res = await(Log.fromIpfsHash(ipfs, hash, -1, callback))
+        }))
+
       }))
     }))
 
@@ -528,7 +558,7 @@ let ipfs, ipfsDaemon
 
     describe('fromEntry', () => {
       let prev = null
-      const onProgress = (hash, entry, parent, depth, have) => {
+      const onProgress = (hash, entry, parent, depth) => {
         let padding = []
         const isLast = parent ? parent.next.indexOf(hash) === parent.next.length - 1 : true
         prev = entry
@@ -541,8 +571,39 @@ let ipfs, ipfsDaemon
           ? (isLast ? "└─" : "├─")
           : ""          
 
-        console.log(padding.join("") + connectorChar + hash + " \"" + entry.payload + "\"" + (have ? " ✓" : ""))
+        console.log(padding.join("") + connectorChar + hash + " \"" + entry.payload)
       }
+
+      it('onProgress callback is fired for each entry', async(() => {
+        const log1 = Log.create(ipfs, 'A')
+        let items1 = []
+        const amount = 100
+        for(let i = 1; i <= amount; i ++) {
+          const prev1 = last(items1)
+          const n1 = await(Entry.create(ipfs, 'A', 'entryA' + i, prev1))
+          items1.push(n1)
+        }
+
+        let i = 0
+        let prevDepth = 0
+        const callback = (hash, entry, parent, depth) => {
+          assert.notEqual(entry, null)
+          assert.equal(hash, items1[items1.length - i - 1].hash)
+          assert.equal(entry.hash, items1[items1.length - i - 1].hash)
+          assert.equal(entry.payload, items1[items1.length - i - 1].payload)
+          assert.equal(depth, i)
+
+          if (i > 0) {
+            assert.equal(parent.payload, items1[items1.length - i].payload)
+          }
+
+          i ++
+          prevDepth = depth
+        }
+
+        const hash = last(items1).hash
+        const a = await(Log.fromEntry(ipfs, 'A', hash, -1, callback))
+      }))
 
       it('retrieves partial log from an entry hash', async(() => {
         const log1 = Log.create(ipfs, 'A')
