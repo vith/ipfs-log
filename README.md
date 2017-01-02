@@ -329,6 +329,7 @@ PRs and [issues](https://github.com/haadcode/ipfs-log/issues) are gladly accepte
 - Immutable
 - O(1) writes, O(1) reads, O(n) joins
 - Joins can be made constant-time by limiting the join (eg. { limit: 1000 })
+- Performance target: > 60 ops/s for joins, > 60 ops/s for writes
 
 ### TODO
 
