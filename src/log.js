@@ -184,6 +184,13 @@ class LogUtils {
   }
 
   /**
+   * @alias fromIpfsHash
+   */
+  static fromMultihash(ipfs, log, length = -1, onProgressCallback) {
+    return LogUtils.fromIpfsHash(ipfs, log, length, onProgressCallback)
+  }
+
+  /**
    * Get the log's multihash
    * @param {IPFS} [ipfs] An IPFS instance
    * @param {Log} log
@@ -196,6 +203,13 @@ class LogUtils {
     const data = new Buffer(JSON.stringify(log.serialize()))
     return ipfs.object.put(data)
       .then((res) => res.toJSON().multihash)
+  }
+
+  /**
+   * @alias getIpfsHash
+   */
+  static toMultihash(ipfs, log) {
+    return LogUtils.getIpfsHash(ipfs, log)
   }
 
   /**

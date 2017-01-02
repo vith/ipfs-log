@@ -14,8 +14,8 @@ const dataDir = './ipfs'
 
 let ipfs, ipfsDaemon
 
-[IpfsNodeDaemon].forEach((IpfsDaemon) => {
-// [IpfsNodeDaemon, IpfsNativeDaemon].forEach((IpfsDaemon) => {
+// [IpfsNodeDaemon].forEach((IpfsDaemon) => {
+[IpfsNodeDaemon, IpfsNativeDaemon].forEach((IpfsDaemon) => {
 
   describe.only('Log', function() {
     this.timeout(60000)
@@ -145,6 +145,16 @@ let ipfs, ipfsDaemon
         }))
       }))
 
+      describe('toMultihash', async(() => {
+        it('is an alias for getIpfsHash', async(() => {
+          const expectedHash = 'QmYQCGT1wTGDturBV2d9zrXZm5aQceKKzVnSCfEGq7Bs95'
+          let log = Log.create(ipfs, 'A')
+          log = await(Log.append(ipfs, log, 'one'))
+          const hash = await(Log.toMultihash(ipfs, log))
+          assert.equal(hash, expectedHash)
+        }))
+      }))
+
       describe('fromIpfsHash', async(() => {
         it('creates an empty log from ipfs hash', async(() => {
           const expectedData = { id: 'A', heads: ['QmXYY216yxr5zeddmWFi6snVAXJcscNdxrzqs3588wGwNT'] }
@@ -253,7 +263,19 @@ let ipfs, ipfsDaemon
         }))
 
       }))
+
+      describe('fromMultihash', async(() => {
+        it('is an alias for fromIpfsHash', async(() => {
+          const expectedData = { id: 'A', heads: ['QmXYY216yxr5zeddmWFi6snVAXJcscNdxrzqs3588wGwNT'] }
+          let log = Log.create(ipfs, 'A')
+          log = await(Log.append(ipfs, log, 'one'))
+          const hash = await(Log.toMultihash(ipfs, log))
+          const res = await(Log.fromMultihash(ipfs, hash))
+          assert.equal(JSON.stringify(res.serialize()), JSON.stringify(expectedData))
+        }))
+      }))
     }))
+
 
     describe('items', () => {
       it('returns all entrys in the log', async(() => {
