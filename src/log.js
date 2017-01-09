@@ -9,39 +9,26 @@ const Entry = require('./entry')
  * ipfs-log
  *
  * @example
+ * // https://github.com/haadcode/ipfs-log/blob/master/examples/log.js
  * const IPFS = require('ipfs-daemon')
  * const Log  = require('ipfs-log')
- *
  * const ipfs = new IPFS()
  *
- * const log1 = Log.create(ipfs)
- * const log2 = Log.create(ipfs)
- *
- * ipfs.on('error', (err) => console.error(err))
- *
  * ipfs.on('ready', () => {
- *   // Add entry to the first log
- *   const entry1 = await Log.append(ipfs, log, 'one')
- *   console.log(entry1.hash, entry1.payload)
- *
- *   // Add entry to the second log
- *   const entry2 = await Log.append(ipfs, log, { two: 'hello' })
- *   console.log(entry2.hash, entry2.payload)
- *
- *   // Join the logs
- *   const log3 = Log.join(ipfs, log1, log2)
- *
- *   // Output the log as an array and as a graph
- *   console.log(log3.items.map((e) => e.payload).join()) 
+ *   const log1 = await Log.create(ipfs, 'one', [])
+ *   const log2 = await Log.create(ipfs, { two: 'hello' }, [])
+ *   const out = Log.join(ipfs, log2, log2)
+ *     .items
+ *     .map((e) => e.payload)
+ *     .join('\n')
+ *   console.log(out)
  *   // ['one', '{ two: 'hello' }']
- *   log3.print()
  * })
  */
 class Log {
-  constructor(ipfs, opts) {
-    this._ipfs = ipfs
-    this._items = opts && opts.items ? opts.items : []
-    this._heads = opts && opts.heads ? opts.heads : LogUtils._findHeads(this)
+  constructor(ipfs, entries, heads) {
+    this._entries = entries || []
+    this._heads = heads || LogUtils._findHeads(this) || []
   }
 
   /**
@@ -49,7 +36,7 @@ class Log {
    * @returns {Array<Entry>}
    */
   get items() {
-    return this._items
+    return this._entries
   }
 
   /**
@@ -70,30 +57,17 @@ class Log {
   }
 
   /**
-   * Get the log entries as a string
+   * Returns the log entries as a formatted string
+   * @example
+   * two
+   * └─one
+   *   └─three
+   * @param {boolean} [withHash=false] - If set to 'true', the hash of the entry is included
    * @returns {string}
    */
-  toString() {
-    return this.items.map((e) => e.payload).join("\n")
-  }
-
-  /**
-   * Get the log in serialized format
-   * @returns {Object<{id, heads}>}
-   */
-  serialize() {
-    return {
-      heads: this.heads,
-    }
-  }
-
-  /**
-   * Print the log as a graph
-   * @param {boolean} [witHash] [Print entries with their multihash. Default: print payload only.]
-   */
-  print(withHash) {
+  toString(withHash) {
     let items = [].concat(this.items).reverse()
-    items.forEach((e, idx) => {      
+    return items.map((e, idx) => {
       const parents = LogUtils._findParents(this, e)
       let padding = []
 
@@ -105,8 +79,16 @@ class Log {
         padding.push("└─")
       }
 
-      console.log(padding.join("") + (withHash ? e.hash + " " : "") + e.payload)
-    })
+      return padding.join("") + (withHash ? e.hash + " " : "") + e.payload
+    }).join('\n')
+  }
+
+  /**
+   * Get the log in serialized format
+   * @returns {Object<{id, heads}>}
+   */
+  serialize() {
+    return { heads: this.heads }
   }
 }
 
@@ -119,13 +101,11 @@ class LogUtils {
    * @param {Array} [heads] - Heads for this log
    * @returns {Log}
    */
-  // static create(ipfs, id, entries, heads) {
   static create(ipfs, entries, heads) {
     if (!ipfs) throw new Error("Ipfs instance not defined")
-    return new Log(ipfs, {
-      items: entries,
-      heads: heads,
-    })
+      // TODO: if (Array.isArray(entries))
+      // TODO: entries.map((e) => Entry.isEntry(e) ? e : await Entry.create(ipfs, e))
+    return new Log(ipfs, entries, heads)
   }
 
   /**
@@ -137,11 +117,9 @@ class LogUtils {
    * @param {function(hash, entry, parent, depth)} onProgressCallback
    * @returns {Promise<Log>}
    */
-  // static fromEntry(ipfs, id, hash, length = -1, onProgressCallback) {
   static fromEntry(ipfs, hash, length = -1, onProgressCallback) {
     return LogUtils._fetchRecursive(ipfs, hash, {}, length, 0, null, onProgressCallback)
       .then((items) => {
-        // let log = LogUtils.create(ipfs, id)
         let log = LogUtils.create(ipfs)
         items.reverse().forEach((e) => LogUtils._insert(ipfs, log, e))
         log._heads = LogUtils._findHeads(log)
@@ -226,10 +204,7 @@ class LogUtils {
         // Set the heads of this log to the latest entry
         const heads = [entry.hash]
         // Create a new log instance
-        return new Log(ipfs, {
-          items: items,
-          heads: heads,
-        })
+        return new Log(ipfs, items, heads)
       })
   }
 
@@ -257,8 +232,8 @@ class LogUtils {
     size = size ? size : a.items.length + b.items.length
 
     // Get the heads from both logs and sort them by their IDs
-    const headsA = a._heads.map((e) => a.get(e)).filter((e) => e !== undefined).slice()
-    const headsB = b._heads.map((e) => b.get(e)).filter((e) => e !== undefined).slice()
+    const headsA = a.heads.map((e) => a.get(e)).filter((e) => e !== undefined).slice()
+    const headsB = b.heads.map((e) => b.get(e)).filter((e) => e !== undefined).slice()
     const heads = headsA.concat(headsB)
       .filter((e) => e !== undefined)
       .map((e) => e.hash)
@@ -329,11 +304,11 @@ class LogUtils {
     // If entry is already in the log, don't insert
     if(hashes.includes(entry.hash)) return entry
     // Find the item's parents' indices
-    let indices = entry.next.map((next) => hashes.indexOf(next))
+    const indices = entry.next.map((next) => hashes.indexOf(next))
     // Find the largest index (latest parent)
     const index = indices.length > 0 ? Math.max(Math.max.apply(null, indices) + 1, 0) : 0
     // Insert
-    log._items.splice(index, 0, entry)
+    log.items.splice(index, 0, entry)
     return entry
   }
 

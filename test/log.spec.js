@@ -35,8 +35,7 @@ let ipfs, ipfsDaemon
     describe('create', async(() => {
       it('creates an empty log', async(() => {
         const log = Log.create(ipfs)
-        assert.notEqual(log._ipfs, null)
-        assert.notEqual(log._items, null)
+        assert.notEqual(log._entries, null)
         assert.notEqual(log._heads, null)
       }))
 
@@ -78,6 +77,23 @@ let ipfs, ipfsDaemon
           assert.equal(e.message, 'Ipfs instance not defined')
         }
       }))
+    }))
+
+    describe('toString', async(() => {
+      let log
+      const expectedData = "three\n└─two\n  └─one"
+
+      beforeEach(async(() => {
+        log = Log.create(ipfs)
+        log = await(Log.append(ipfs, log, "one"))
+        log = await(Log.append(ipfs, log, "two"))
+        log = await(Log.append(ipfs, log, "three"))
+      }))
+
+      it('returns a nicely formatted string', () => {
+        assert.equal(log.toString(), expectedData)
+        console.log(log.toString())
+      })
     }))
 
     describe('serialize', async(() => {
@@ -155,7 +171,6 @@ let ipfs, ipfsDaemon
         it('creates a log from ipfs hash', async(() => {
           const hash = await(Log.getIpfsHash(ipfs, log))
           const res = await(Log.fromIpfsHash(ipfs, hash))
-          // res.print(true)
           assert.equal(res.items.length, 3)
           assert.equal(res.items[0].payload, 'one')
           assert.equal(res.items[1].payload, 'two')
@@ -362,9 +377,8 @@ let ipfs, ipfsDaemon
         const logB = await(Log.fromEntry(ipfs, last(items3).hash))
         assert.equal(logA.items.length, items2.length + items1.length)
         assert.equal(logB.items.length, items3.length + items2.length + items1.length)
-        
+
         const log = Log.join(ipfs, logA, logB)
-        // log.print()
 
         assert.equal(log.items.length, items3.length + items2.length + items1.length)
         assert.equal(log._heads.length, 2)
@@ -493,7 +507,7 @@ let ipfs, ipfsDaemon
           'helloB1', 'helloC2', 'helloC1', 'helloA2', 'helloA1'
         ]
 
-        log4.print()
+        console.log(log4.toString())
         assert.equal(log4.items.length, 10)
         expectedData.reverse().forEach((e, i) => {
           assert.equal(log4.items[i].payload, e)
@@ -541,14 +555,14 @@ let ipfs, ipfsDaemon
 
         console.log("limit to 10 entries")
         const a = await(Log.fromEntry(ipfs, last(items1).hash, 10))
-        a.print()
+        console.log(a.toString())
         assert.equal(a.items.length, 10)
 
         console.log("expand 10 more")
         const b = await(Log.expand(ipfs, a, 10, onProgress))
 
         console.log("expanded to 20 entries")
-        b.print()
+        console.log(b.toString())
         assert.equal(b.items.length, 20)
 
         const c = await(Log.expand(ipfs, b))
@@ -744,8 +758,8 @@ let ipfs, ipfsDaemon
         e2 = await(Log.append(ipfs, e2, "DONE"))
         const f = await(Log.fromEntry(ipfs, last(e1.items).hash, -1, onProgress))
         const g = await(Log.fromEntry(ipfs, last(e2.items).hash, -1, onProgress))
-        f.print()
-        g.print()
+        console.log(f.toString())
+        console.log(g.toString())
         assert.equal(f.toString(), g.toString())
       }))
     })

@@ -5,21 +5,30 @@ const Log  = require('../src/log')
 
 const ipfs = new IPFS()
 
-
 ipfs.on('error', (err) => console.error(err))
-
 ipfs.on('ready', () => {
-  // When IPFS is ready, add some log entries
-  let log = Log.create(ipfs)
-  Log.append(ipfs, log, 'one')
-    .then((res) => {
-      log = res
-      console.log('\n', log.items)
-      return Log.append(ipfs, log, { two: 'hello' })
+  let log1 = Log.create(ipfs)
+  let log2 = Log.create(ipfs)
+
+  Log.append(ipfs, log1, 'one')
+    .then((log) => {
+      log1 = log
+      console.log(log1.items)
+      // [ { hash: 'QmUrqiypsLPAWN24Y3gHarmDTgvW97bTUiXnqN53ySXM9V',
+      //     payload: 'one',
+      //     next: [] } ]
     })
-    .then((res) => {
-      log = res
-      console.log('\n', log.items)
-      process.exit(0)
+    .then(() => Log.append(ipfs, log1, 'two'))
+    .then((log) => log1 = log)
+    .then(() => Log.append(ipfs, log2, 'three'))
+    .then((log) => log2 = log)
+    .then(() => {
+      // Join the logs
+      const log3 = Log.join(ipfs, log1, log2)
+      console.log(log3.toString())
+      // two
+      // └─one
+      // three
+      process.exit(1)
     })
 })
