@@ -81,13 +81,15 @@ let ipfs, ipfsDaemon
 
     describe('toString', async(() => {
       let log
-      const expectedData = "three\n└─two\n  └─one"
+      const expectedData = "five\n└─four\n  └─three\n    └─two\n      └─one"
 
       beforeEach(async(() => {
         log = Log.create(ipfs)
         log = await(Log.append(ipfs, log, "one"))
         log = await(Log.append(ipfs, log, "two"))
         log = await(Log.append(ipfs, log, "three"))
+        log = await(Log.append(ipfs, log, "four"))
+        log = await(Log.append(ipfs, log, "five"))
       }))
 
       it('returns a nicely formatted string', () => {
@@ -111,18 +113,24 @@ let ipfs, ipfsDaemon
         log = await(Log.append(ipfs, log, "three"))
       }))
 
-      describe('serialize', () => {
-        it('returns the current batch of items', () => {
-          assert.equal(JSON.stringify(log.serialize()), JSON.stringify(expectedData))
+      describe('toJSON', () => {
+        it('returns the log in JSON format', () => {
+          assert.equal(JSON.stringify(log.toJSON()), JSON.stringify(expectedData))
         })
       })
 
-      describe('getIpfsHash', async(() => {
+      describe('toBuffer', () => {
+        it('returns the log as a Buffer', () => {
+          assert.deepEqual(log.toBuffer(), new Buffer(JSON.stringify(expectedData)))
+        })
+      })
+
+      describe('toMultihash', async(() => {
         it('returns the log as ipfs hash', async(() => {
           const expectedHash = 'QmUfEy11syU6DxkAdnQyCmgrmeoZz5xV3TW2KYmJ6YidnT'
           let log = Log.create(ipfs)
           log = await(Log.append(ipfs, log, 'one'))
-          const hash = await(Log.getIpfsHash(ipfs, log))
+          const hash = await(Log.toMultihash(ipfs, log))
           assert.equal(hash, expectedHash)
         }))
 
@@ -131,7 +139,7 @@ let ipfs, ipfsDaemon
           const expectedHash = 'QmUfEy11syU6DxkAdnQyCmgrmeoZz5xV3TW2KYmJ6YidnT'
           let log = Log.create(ipfs)
           log = await(Log.append(ipfs, log, 'one'))
-          const hash = await(Log.getIpfsHash(ipfs, log))
+          const hash = await(Log.toMultihash(ipfs, log))
           assert.equal(hash, expectedHash)
           const res = await(ipfs.object.get(hash, { enc: 'base58' }))
           const result = JSON.parse(res.toJSON().data.toString())
@@ -141,36 +149,26 @@ let ipfs, ipfsDaemon
         it('throws an error if ipfs is not defined', async(() => {
           try {
             const log = Log.create(ipfs)
-            const hash = await(Log.getIpfsHash(null, log))
+            const hash = await(Log.toMultihash(null, log))
           } catch(e) {
             assert.equal(e.message, 'Ipfs instance not defined')
           }
         }))
       }))
 
-      describe('toMultihash', async(() => {
-        it('is an alias for getIpfsHash', async(() => {
-          const expectedHash = 'QmUfEy11syU6DxkAdnQyCmgrmeoZz5xV3TW2KYmJ6YidnT'
-          let log = Log.create(ipfs)
-          log = await(Log.append(ipfs, log, 'one'))
-          const hash = await(Log.toMultihash(ipfs, log))
-          assert.equal(hash, expectedHash)
-        }))
-      }))
-
-      describe('fromIpfsHash', async(() => {
+      describe('fromMultihash', async(() => {
         it('creates an empty log from ipfs hash', async(() => {
           const expectedData = { heads: ['QmUrqiypsLPAWN24Y3gHarmDTgvW97bTUiXnqN53ySXM9V'] }
           let log = Log.create(ipfs)
           log = await(Log.append(ipfs, log, 'one'))
-          const hash = await(Log.getIpfsHash(ipfs, log))
-          const res = await(Log.fromIpfsHash(ipfs, hash))
-          assert.equal(JSON.stringify(res.serialize()), JSON.stringify(expectedData))
+          const hash = await(Log.toMultihash(ipfs, log))
+          const res = await(Log.fromMultihash(ipfs, hash))
+          assert.equal(JSON.stringify(res.toJSON()), JSON.stringify(expectedData))
         }))
 
         it('creates a log from ipfs hash', async(() => {
-          const hash = await(Log.getIpfsHash(ipfs, log))
-          const res = await(Log.fromIpfsHash(ipfs, hash))
+          const hash = await(Log.toMultihash(ipfs, log))
+          const res = await(Log.fromMultihash(ipfs, hash))
           assert.equal(res.items.length, 3)
           assert.equal(res.items[0].payload, 'one')
           assert.equal(res.items[1].payload, 'two')
@@ -186,8 +184,8 @@ let ipfs, ipfsDaemon
           log3 = await(Log.append(ipfs, log3, "three"))
           const log4 = Log.join(ipfs, log1, log2)
           const log5 = Log.join(ipfs, log4, log3)
-          const hash = await(Log.getIpfsHash(ipfs, log5))
-          const res = await(Log.fromIpfsHash(ipfs, hash))
+          const hash = await(Log.toMultihash(ipfs, log5))
+          const res = await(Log.fromMultihash(ipfs, hash))
           assert.equal(res.items.length, 3)
           assert.equal(res._heads.length, 3)
           assert.equal(res.items[0].payload, 'one')
@@ -202,8 +200,8 @@ let ipfs, ipfsDaemon
           for (let i = 0; i < amount; i ++) {
             log = await(Log.append(ipfs, log, i.toString()))
           }
-          const hash = await(Log.getIpfsHash(ipfs, log))
-          const res = await(Log.fromIpfsHash(ipfs, hash, size))
+          const hash = await(Log.toMultihash(ipfs, log))
+          const res = await(Log.fromMultihash(ipfs, hash, size))
           assert.equal(res.items.length, size)
         }))
 
@@ -213,14 +211,14 @@ let ipfs, ipfsDaemon
           for (let i = 0; i < amount; i ++) {
             log = await(Log.append(ipfs, log, i.toString()))
           }
-          const hash = await(Log.getIpfsHash(ipfs, log))
-          const res = await(Log.fromIpfsHash(ipfs, hash, -1))
+          const hash = await(Log.toMultihash(ipfs, log))
+          const res = await(Log.fromMultihash(ipfs, hash, -1))
           assert.equal(res.items.length, amount)
         }))
 
         it('throws an error when data from hash is not instance of Log', async(() => {
           try {
-            await(Log.fromIpfsHash(ipfs, 'QmUrqiypsLPAWN24Y3gHarmDTgvW97bTUiXnqN53ySXM9V'))
+            await(Log.fromMultihash(ipfs, 'QmUrqiypsLPAWN24Y3gHarmDTgvW97bTUiXnqN53ySXM9V'))
           } catch(e) {
             assert.equal(e.message, 'Not a Log instance')
           }
@@ -229,7 +227,7 @@ let ipfs, ipfsDaemon
         it('throws an error if data from hash is not valid JSON', async(() => {
           const res = await(ipfs.object.put(new Buffer('hello')))
           try {
-            await(Log.fromIpfsHash(ipfs, res.toJSON().multihash))
+            await(Log.fromMultihash(ipfs, res.toJSON().multihash))
           } catch(e) {
             assert.equal(e.message, 'Unexpected token h in JSON at position 0')
           }
@@ -260,24 +258,12 @@ let ipfs, ipfsDaemon
             prevDepth = depth
           }
 
-          const hash = await(Log.getIpfsHash(ipfs, log))
-          const res = await(Log.fromIpfsHash(ipfs, hash, -1, callback))
-        }))
-
-      }))
-
-      describe('fromMultihash', async(() => {
-        it('is an alias for fromIpfsHash', async(() => {
-          const expectedData = { heads: ['QmUrqiypsLPAWN24Y3gHarmDTgvW97bTUiXnqN53ySXM9V'] }
-          let log = Log.create(ipfs)
-          log = await(Log.append(ipfs, log, 'one'))
           const hash = await(Log.toMultihash(ipfs, log))
-          const res = await(Log.fromMultihash(ipfs, hash))
-          assert.equal(JSON.stringify(res.serialize()), JSON.stringify(expectedData))
+          const res = await(Log.fromMultihash(ipfs, hash, -1, callback))
         }))
+
       }))
     }))
-
 
     describe('items', () => {
       it('returns all entrys in the log', async(() => {

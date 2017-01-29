@@ -26,7 +26,7 @@ class Entry {
       next: nexts // Array of IPFS hashes
     }
 
-    return Entry.toIpfsHash(ipfs, entry)
+    return Entry.toMultihash(ipfs, entry)
       .then((hash) => {
         entry.hash = hash
         return entry
@@ -39,12 +39,12 @@ class Entry {
    * @param {string|Buffer|Object|Array} [data] Data of the entry to be added
    * @param {Array<Entry>} [next=[]] Parents of the entry
    * @example
-   * const hash = await Entry.toIpfsHash(ipfs, entry)
+   * const hash = await Entry.toMultihash(ipfs, entry)
    * console.log(hash)
    * // "Qm...Foo"
    * @returns {Promise<string>}
    */
-  static toIpfsHash(ipfs, entry) {
+  static toMultihash(ipfs, entry) {
     if (!ipfs) throw new Error("Entry requires ipfs instance")
     const data = new Buffer(JSON.stringify(entry))
     return ipfs.object.put(data)
@@ -56,12 +56,12 @@ class Entry {
    * @param {IPFS} [ipfs] An IPFS instance
    * @param {string} [hash] Multihash to create an Entry from
    * @example
-   * const hash = await Entry.fromIpfsHash(ipfs, "Qm...Foo")
+   * const hash = await Entry.fromMultihash(ipfs, "Qm...Foo")
    * console.log(hash)
    * // { hash: "Qm...Foo", payload: "hello", next: [] }
    * @returns {Promise<Entry>}
    */
-  static fromIpfsHash(ipfs, hash) {
+  static fromMultihash(ipfs, hash) {
     if (!ipfs) throw new Error("Entry requires ipfs instance")
     if (!hash) throw new Error("Invalid hash: " + hash)
     return ipfs.object.get(hash, { enc: 'base58' })

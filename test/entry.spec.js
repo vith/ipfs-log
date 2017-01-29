@@ -100,23 +100,23 @@ let ipfs, ipfsDaemon
       }))
     })
 
-    describe('toIpfsHash', () => {
+    describe('toMultihash', () => {
       it('returns an ipfs hash', async(() => {
         const expectedHash = 'QmVb4xt7ckFFyH3qxGtR4SKo3FcBD5itfPmyTqAjrAzcW3'
         const entry = await(Entry.create(ipfs))
-        const hash = await(Entry.toIpfsHash(ipfs, entry))
+        const hash = await(Entry.toMultihash(ipfs, entry))
         assert.equal(hash, expectedHash)
       }))
     })
 
-    describe('fromIpfsHash', () => {
+    describe('fromMultihash', () => {
       it('creates a entry from ipfs hash', async(() => {
         const expectedHash = 'QmRzyeUuW5F8zxmEgJG3wRPH3i3W7iwPweza7UUHhXfK93'
         const payload1 = 'hello world'
         const payload2 = 'hello again'
         const entry1 = await(Entry.create(ipfs, payload1))
         const entry2 = await(Entry.create(ipfs, payload2, entry1))
-        const final = await(Entry.fromIpfsHash(ipfs, entry2.hash))
+        const final = await(Entry.fromMultihash(ipfs, entry2.hash))
         assert.equal(final.payload, payload2)
         assert.equal(final.next.length, 1)
         assert.equal(final.next[0], entry1.hash)
@@ -125,7 +125,7 @@ let ipfs, ipfsDaemon
 
       it('throws an error if ipfs is not present', async(() => {
         try {
-          const entry = await(Entry.fromIpfsHash())
+          const entry = await(Entry.fromMultihash())
         } catch(e) {
           assert.equal(e.message, 'Entry requires ipfs instance')
         }
@@ -133,7 +133,7 @@ let ipfs, ipfsDaemon
 
       it('throws an error if hash is undefined', async(() => {
         try {
-          const entry = await(Entry.fromIpfsHash(ipfs))
+          const entry = await(Entry.fromMultihash(ipfs))
         } catch(e) {
           assert.equal(e.message, 'Invalid hash: undefined')
         }
