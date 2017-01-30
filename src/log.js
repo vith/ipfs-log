@@ -1,9 +1,7 @@
 'use strict'
 
-const differenceWith = require('lodash.differencewith')
-const take = require('lodash.take')
-const Promise = require('bluebird')
 const Entry = require('./entry')
+const mapSeries = require('./map-series')
 
 /** 
  * ipfs-log
@@ -211,7 +209,6 @@ class LogUtils {
    * @returns {Log}
    */
   static join(ipfs, a, b, size) {
-    // const st = new Date().getTime()
     if (!ipfs) throw new Error('Ipfs instance not defined')
     if (!a || !b) throw new Error('Log instance not defined')
     if (!a.items || !b.items) throw new Error('Log to join must be an instance of Log')
@@ -241,8 +238,8 @@ class LogUtils {
     const log2 = isFirst ? b : a
 
     // Cap the size of the entries
-    const newEntries = take(log2.items.slice(), size)
-    const oldEntries = take(log1.items.slice(), size)
+    const newEntries = log2.items.slice(0, size)
+    const oldEntries = log1.items.slice(0, size)
 
     // Create a new log instance
     let result = LogUtils.create(ipfs, oldEntries, heads)
@@ -250,8 +247,6 @@ class LogUtils {
     // Insert each entry to the log
     newEntries.forEach((e) => LogUtils._insert(ipfs, result, e))
 
-    // const et = new Date().getTime()
-    // console.log('join() took ' + (et - st) + 'ms', diff.length, result.items.length)
     return result
   }
 
@@ -330,7 +325,7 @@ class LogUtils {
         all[hash] = entry
         onProgressCallback(hash, entry, parent, depth)
         const fetch = (hash) => LogUtils._fetchRecursive(ipfs, hash, all, amount, depth + 1, entry, onProgressCallback)
-        return Promise.mapSeries(entry.next, fetch, { concurrency: 1 })
+        return mapSeries(entry.next, fetch, { concurrency: 1 })
           .then((res) => res.concat([entry]))
           .then((res) => res.reduce((a, b) => a.concat(b), [])) // flatten the array
       })

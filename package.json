@@ -13,9 +13,6 @@
     "node": "^6.x.x"
   },
   "dependencies": {
-    "bluebird": "^3.4.6",
-    "lodash.differencewith": "^4.5.0",
-    "lodash.take": "^4.1.1"
   },
   "devDependencies": {
     "asyncawait": "^1.0.6",
