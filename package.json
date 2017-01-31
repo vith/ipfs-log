@@ -12,26 +12,23 @@
   "engines": {
     "node": "^6.x.x"
   },
-  "dependencies": {
-  },
+  "dependencies": {},
   "devDependencies": {
     "asyncawait": "^1.0.6",
-    "babel-core": "^6.20.0",
-    "babel-loader": "^6.2.9",
-    "ipfs-daemon": "^0.3.0-beta.13",
+    "babel-core": "^6.22.1",
+    "babel-loader": "^6.2.10",
+    "ipfs-daemon": "^0.3.0-beta.18",
     "json-loader": "^0.5.4",
-    "lodash.last": "^3.0.0",
-    "mocha": "^3.0.1",
+    "mocha": "^3.2.0",
     "rimraf": "^2.5.4",
-    "stream-http": "^2.5.0",
-    "webpack": "^2.1.0-beta.28"
+    "stream-http": "^2.6.3",
+    "uglify-js": "github:mishoo/UglifyJS2#harmony",
+    "webpack": "^2.2.1"
   },
   "scripts": {
     "test": "mocha",
     "build": "npm run build:dist && npm run build:examples",
-    "build:dist": "webpack --config webpack.config.js",
-    "build:examples": "webpack --config webpack.example.config.js",
-    "stats": "webpack --json > stats.json",
-    "stats:examples": "webpack --config webpack.example.config.js --json > stats.examples.json"
+    "build:dist": "webpack --config webpack.config.js --display-modules --sort-modules-by size",
+    "build:examples": "webpack --config webpack.example.config.js"
   }
 }

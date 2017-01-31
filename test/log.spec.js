@@ -1,6 +1,5 @@
 'use strict'
 
-const last = require('lodash.last')
 const assert = require('assert')
 const async = require('asyncawait/async')
 const await = require('asyncawait/await')
@@ -13,6 +12,10 @@ const Entry = require('../src/entry')
 const dataDir = './ipfs'
 
 let ipfs, ipfsDaemon
+
+const last = (arr) => {
+  return arr[arr.length - 1]
+}
 
 // [IpfsNodeDaemon].forEach((IpfsDaemon) => {
 [IpfsNodeDaemon, IpfsNativeDaemon].forEach((IpfsDaemon) => {
