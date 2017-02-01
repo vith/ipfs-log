@@ -42,6 +42,17 @@ const last = (arr) => {
         assert.notEqual(log._heads, null)
       }))
 
+      it('throws an error if ipfs is not defined', () => {
+        let err
+        try {
+          Log.create()
+        } catch (e) {
+          err = e
+        }
+        assert.notEqual(err, null)
+        assert.equal(err.message, 'Ipfs instance not defined')
+      })
+
       it('sets items if given as params', async(() => {
         const one = await(Entry.create(ipfs, 'entryA'))
         const two = await(Entry.create(ipfs, 'entryB'))
@@ -149,14 +160,27 @@ const last = (arr) => {
           assert.equal(result.heads.length, expectedData.heads.length)
         }))
 
-        it('throws an error if ipfs is not defined', async(() => {
+        it('throws an error if ipfs is not defined', () => {
+          let err
           try {
-            const log = Log.create(ipfs)
-            const hash = await(Log.toMultihash(null, log))
-          } catch(e) {
-            assert.equal(e.message, 'Ipfs instance not defined')
+            Log.toMultihash()
+          } catch (e) {
+            err = e
           }
-        }))
+          assert.notEqual(err, null)
+          assert.equal(err.message, 'Ipfs instance not defined')
+        })
+
+        it('throws an error if log is not defined', () => {
+          let err
+          try {
+            Log.toMultihash(ipfs)
+          } catch (e) {
+            err = e
+          }
+          assert.notEqual(err, null)
+          assert.equal(err.message, 'Log instance not defined')
+        })
       }))
 
       describe('fromMultihash', async(() => {
@@ -218,6 +242,17 @@ const last = (arr) => {
           const res = await(Log.fromMultihash(ipfs, hash, -1))
           assert.equal(res.items.length, amount)
         }))
+
+        it('throws an error if ipfs is not defined', () => {
+          let err
+          try {
+            const log = Log.fromMultihash()
+          } catch (e) {
+            err = e
+          }
+          assert.notEqual(err, null)
+          assert.equal(err.message, 'Ipfs instance not defined')
+        })
 
         it('throws an error when data from hash is not instance of Log', async(() => {
           try {
@@ -330,6 +365,28 @@ const last = (arr) => {
         assert.equal(entry.payload, 'hello' + amount)
         assert.notEqual(entry.next.length, 0)
       }))
+
+      it('throws an error if ipfs is not defined', () => {
+        let err
+        try {
+          Log.append()
+        } catch (e) {
+          err = e
+        }
+        assert.notEqual(err, null)
+        assert.equal(err.message, 'Ipfs instance not defined')
+      })
+
+      it('throws an error if log is not defined', () => {
+        let err
+        try {
+          Log.append(ipfs)
+        } catch (e) {
+          err = e
+        }
+        assert.notEqual(err, null)
+        assert.equal(err.message, 'Log instance not defined')
+      })
     })
 
     describe.skip('joinAll', () => {
@@ -373,12 +430,26 @@ const last = (arr) => {
         assert.equal(log._heads.length, 2)
       }))
 
+      it('throws an error if ipfs is not defined', () => {
+        let err
+        try {
+          Log.join()
+        } catch (e) {
+          err = e
+        }
+        assert.notEqual(err, null)
+        assert.equal(err.message, 'Ipfs instance not defined')
+      })
+
       it('throws an error if passed argument is not an instance of Log', () => {
+        let err
         try {
           Log.join(ipfs, log1, {})
         } catch(e) {
-          assert.equal(e.message, 'Log to join must be an instance of Log')
+          err = e
         }
+        assert.notEqual(err, null)
+        assert.equal(err.message, 'Log to join must be an instance of Log')
       })
 
       it('joins only unique items', async(() => {
@@ -560,6 +631,28 @@ const last = (arr) => {
         const d = await(Log.expand(ipfs, c))
         assert.equal(d.items.length, amount)
       }))
+
+      it('throws an error if ipfs is not defined', () => {
+        let err
+        try {
+          Log.expand()
+        } catch (e) {
+          err = e
+        }
+        assert.notEqual(err, null)
+        assert.equal(err.message, 'Ipfs instance not defined')
+      })
+
+      it('throws an error if log is not defined', () => {
+        let err
+        try {
+          Log.expand(ipfs)
+        } catch (e) {
+          err = e
+        }
+        assert.notEqual(err, null)
+        assert.equal(err.message, 'Log instance not defined')
+      })
     })
 
     describe('fromEntry', () => {
@@ -751,6 +844,17 @@ const last = (arr) => {
         console.log(g.toString())
         assert.equal(f.toString(), g.toString())
       }))
+
+      it('throws an error if ipfs is not defined', () => {
+        let err
+        try {
+          Log.fromEntry()
+        } catch (e) {
+          err = e
+        }
+        assert.notEqual(err, null)
+        assert.equal(err.message, 'Ipfs instance not defined')
+      })
     })
 
     describe('_fetchRecursive', () => {
@@ -825,6 +929,17 @@ const last = (arr) => {
         assert.equal(items[0].hash, 'QmTRF2oGMG7L5yP6LU1bpy2DEdLTzkRByS9nshRkMAFhBy')
         assert.equal(items[1].hash, 'QmQG1rPMjt1RQPQTu6cJfSMSS8GddcSw9GxLkVtRB32pMD')
       }))
+
+      it('throws an error if ipfs is not defined', () => {
+        let err
+        try {
+          Log._fetchRecursive()
+        } catch (e) {
+          err = e
+        }
+        assert.notEqual(err, null)
+        assert.equal(err.message, 'Ipfs instance not defined')
+      })
     })
 
     describe('_findHeads', () => {
@@ -973,6 +1088,28 @@ const last = (arr) => {
         assert.equal(log.items.length, 3)
         assert.equal(log.items[0].payload, 'one')
       }))
+
+      it('throws an error if ipfs is not defined', () => {
+        let err
+        try {
+          Log._insert()
+        } catch (e) {
+          err = e
+        }
+        assert.notEqual(err, null)
+        assert.equal(err.message, 'Ipfs instance not defined')
+      })
+
+      it('throws an error if log is not defined', () => {
+        let err
+        try {
+          Log._insert(ipfs)
+        } catch (e) {
+          err = e
+        }
+        assert.notEqual(err, null)
+        assert.equal(err.message, 'Log instance not defined')
+      })
     })
 
     describe('is a CRDT', () => {

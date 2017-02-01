@@ -3,6 +3,9 @@
 const Entry = require('./entry')
 const mapSeries = require('./map-series')
 
+const IpfsNotDefinedError = new Error('Ipfs instance not defined')
+const LogNotDefinedError = new Error('Log instance not defined')
+
 /** 
  * ipfs-log
  *
@@ -105,9 +108,10 @@ class LogUtils {
    * @returns {Log}
    */
   static create(ipfs, entries, heads) {
-    if (!ipfs) throw new Error('Ipfs instance not defined')
-      // TODO: if (Array.isArray(entries))
-      // TODO: entries.map((e) => Entry.isEntry(e) ? e : await Entry.create(ipfs, e))
+    if (!ipfs) throw IpfsNotDefinedError
+
+    // TODO: if (Array.isArray(entries))
+    // TODO: entries.map((e) => Entry.isEntry(e) ? e : await Entry.create(ipfs, e))
     return new Log(ipfs, entries, heads)
   }
 
@@ -121,6 +125,8 @@ class LogUtils {
    * @returns {Promise<Log>}
    */
   static fromEntry(ipfs, hash, length = -1, onProgressCallback) {
+    if (!ipfs) throw IpfsNotDefinedError
+
     return LogUtils._fetchRecursive(ipfs, hash, {}, length, 0, null, onProgressCallback)
       .then((items) => {
         let log = LogUtils.create(ipfs)
@@ -133,17 +139,17 @@ class LogUtils {
   /**
    * Create a log from multihash
    * @param {IPFS} [ipfs] An IPFS instance
-   * @param {string} [hash] Multihash to create the log from
+   * @param {string} [hash] Multihash (as a Base58 encoded string) to create the log from
    * @param {Number} [length=-1] How many items to include in the log
    * @returns {Promise<Log>}
    */
   static fromMultihash(ipfs, hash, length = -1, onProgressCallback) {
-    if (!ipfs) throw new Error('Ipfs instance not defined')
+    if (!ipfs) throw IpfsNotDefinedError
     if (!hash) throw new Error('Invalid hash: ' + hash)
-    let logData
+
     return ipfs.object.get(hash, { enc: 'base58' })
-      .then((res) => logData = JSON.parse(res.toJSON().data))
-      .then((res) => {
+      .then((dagNode) => JSON.parse(dagNode.toJSON().data))
+      .then((logData) => {
         if (!logData.heads) throw new Error('Not a Log instance')
         // Fetch logs starting from each head entry
         const allLogs = logData.heads
@@ -162,11 +168,12 @@ class LogUtils {
    * @returns {Promise<string>}
    */
   static toMultihash(ipfs, log) {
-    if (!ipfs) throw new Error('Ipfs instance not defined')
-    if (!log) throw new Error('Log instance not defined')
+    if (!ipfs) throw IpfsNotDefinedError
+    if (!log) throw LogNotDefinedError
+
     if (log.items.length < 1) throw new Error(`Can't serialize an empty log`)
     return ipfs.object.put(log.toBuffer())
-      .then((res) => res.toJSON().multihash)
+      .then((dagNode) => dagNode.toJSON().multihash)
   }
 
   /**
@@ -180,13 +187,14 @@ class LogUtils {
    * @returns {Log}
    */
   static append(ipfs, log, data) {
-    if (!ipfs) throw new Error('Ipfs instance not defined')
-    if (!log) throw new Error('Log instance not defined')
+    if (!ipfs) throw IpfsNotDefinedError
+    if (!log) throw LogNotDefinedError
+
     // Create the entry
     return Entry.create(ipfs, data, log.heads)
       .then((entry) => {
         // Add the entry to the previous log entries
-        const items = log.items.slice().concat([entry])
+        const items = log.items.concat([entry])
         // Set the heads of this log to the latest entry
         const heads = [entry.hash]
         // Create a new log instance
@@ -209,8 +217,8 @@ class LogUtils {
    * @returns {Log}
    */
   static join(ipfs, a, b, size) {
-    if (!ipfs) throw new Error('Ipfs instance not defined')
-    if (!a || !b) throw new Error('Log instance not defined')
+    if (!ipfs) throw IpfsNotDefinedError
+    if (!a || !b) throw LogNotDefinedError
     if (!a.items || !b.items) throw new Error('Log to join must be an instance of Log')
 
     // If size is not specified, join all entries by default
@@ -221,7 +229,6 @@ class LogUtils {
       return log.heads
       .map((e) => log.get(e))
       .filter((e) => e !== undefined)
-      .slice()
     }
 
     const headsA = getHeadEntries(a)
@@ -257,6 +264,8 @@ class LogUtils {
    * @returns {Log}
    */
   static joinAll(ipfs, logs) {
+    if (!ipfs) throw IpfsNotDefinedError
+
     return logs.reduce((log, val, i) => {
       if (!log) return val
       return LogUtils.join(ipfs, log, val)
@@ -272,6 +281,9 @@ class LogUtils {
    * @returns {Promise<Log>}
    */
   static expand(ipfs, log, length = -1, onProgressCallback) {
+    if (!ipfs) throw IpfsNotDefinedError
+    if (!log) throw LogNotDefinedError
+
     // TODO: Find tails (entries that point to an entry that is not in the log)
     const tails = log.items.slice()[0].next.sort(LogUtils._compare)
     // Fetch a log starting from each tail entry
@@ -289,6 +301,9 @@ class LogUtils {
    * @returns {Entry}
    */
   static _insert(ipfs, log, entry) {
+    if (!ipfs) throw IpfsNotDefinedError
+    if (!log) throw LogNotDefinedError
+
     const hashes = log.items.map((f) => f.hash)
     // If entry is already in the log, don't insert
     if (hashes.includes(entry.hash)) return entry
@@ -314,6 +329,8 @@ class LogUtils {
    * @returns {Promise<Array<Entry>>}
    */
   static _fetchRecursive(ipfs, hash, all = {}, amount = -1, depth = 0, parent = null, onProgressCallback = () => {}) {
+    if (!ipfs) throw IpfsNotDefinedError
+
     // If the given hash is already fetched
     // or if we're at maximum depth, return
     if (all[hash] || (depth >= amount && amount > 0)) {
