@@ -86,7 +86,7 @@ class Log {
    * @returns {Object<{heads}>}
    */
   toJSON() {
-    return { heads: this.heads }
+    return { heads: this.heads.slice() }
   }
 
   /**

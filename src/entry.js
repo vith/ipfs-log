@@ -100,7 +100,7 @@ class Entry {
    * @alias compare
    */
   static isEqual(a, b) {
-    return a.hash === b.hash
+    return compare(a, b)
   }
 }
 
