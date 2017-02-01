@@ -18,17 +18,15 @@
     "babel-core": "^6.22.1",
     "babel-loader": "^6.2.10",
     "ipfs-daemon": "^0.3.0-beta.18",
-    "json-loader": "^0.5.4",
     "mocha": "^3.2.0",
     "rimraf": "^2.5.4",
-    "stream-http": "^2.6.3",
     "uglify-js": "github:mishoo/UglifyJS2#harmony",
     "webpack": "^2.2.1"
   },
   "scripts": {
     "test": "mocha",
-    "build": "npm run build:dist && npm run build:examples",
-    "build:dist": "webpack --config webpack.config.js --display-modules --sort-modules-by size",
-    "build:examples": "webpack --config webpack.example.config.js"
+    "build": "npm run build:examples && npm run build:dist",
+    "build:examples": "webpack --config webpack.example.config.js --sort-modules-by size",
+    "build:dist": "webpack -p --config webpack.config.js --display-modules --sort-modules-by size"
   }
 }

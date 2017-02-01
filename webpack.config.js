@@ -10,12 +10,7 @@ module.exports = {
     library: 'Log',
     filename: './dist/ipfslog.min.js'
   },
-  plugins: [
-    new webpack.optimize.UglifyJsPlugin({
-      mangle: false,
-      compress: { warnings: false }
-    })
-  ],
+  devtool: 'source-map',
   resolve: {
     modules: [
       'node_modules',
