@@ -8,6 +8,7 @@ module.exports = {
   output: {
     filename: './examples/browser/bundle.js'
   },
+  target: 'web',
   node: {
     console: false,
     process: 'mock',
@@ -48,10 +49,5 @@ module.exports = {
       test: /\.json$/,
       loader: 'json-loader'
     }]
-  },
-  node: {
-    Buffer: true
-  },
-  plugins: [],
-  target: 'web'
+  }
 }

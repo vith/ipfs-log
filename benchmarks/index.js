@@ -1,11 +1,9 @@
 'use strict'
 
 const Benchmark = require('benchmark')
-
-const Log   = require('../src/log')
-const Entry = require('../src/entry')
 // const IPFS = require('ipfs-daemon')
 const IPFS = require('ipfs-daemon/src/ipfs-node-daemon')
+const Log = require('../src/log')
 
 const suite = new Benchmark.Suite('ipfs-log')
 
@@ -49,7 +47,6 @@ suite.add('join', (d) => {
   minSamples: 100,
   defer: true
 })
-
 
 ipfs.on('ready', () => {
   log1 = Log.create(ipfs)

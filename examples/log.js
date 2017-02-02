@@ -1,7 +1,7 @@
 'use strict'
 
 const IPFS = require('ipfs-daemon/src/ipfs-node-daemon')
-const Log  = require('../src/log')
+const Log = require('../src/log')
 
 const ipfs = new IPFS()
 
@@ -19,10 +19,12 @@ ipfs.on('ready', () => {
       //     next: [] } ]
     })
     .then(() => Log.append(ipfs, log1, 'two'))
-    .then((log) => log1 = log)
-    .then(() => Log.append(ipfs, log2, 'three'))
-    .then((log) => log2 = log)
-    .then(() => {
+    .then((log) => {
+      log1 = log
+      return Log.append(ipfs, log2, 'three')
+    })
+    .then((log) => {
+      log2 = log
       // Join the logs
       const log3 = Log.join(ipfs, log1, log2)
       console.log(log3.toString())

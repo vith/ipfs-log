@@ -6,7 +6,7 @@ const mapSeries = require('./map-series')
 const IpfsNotDefinedError = new Error('Ipfs instance not defined')
 const LogNotDefinedError = new Error('Log instance not defined')
 
-/** 
+/**
  * ipfs-log
  *
  * @example
@@ -27,7 +27,7 @@ const LogNotDefinedError = new Error('Log instance not defined')
  * })
  */
 class Log {
-  constructor(ipfs, entries, heads) {
+  constructor (ipfs, entries, heads) {
     this._entries = entries || []
     this._heads = heads || []
   }
@@ -36,7 +36,7 @@ class Log {
    * Returns the items in the log
    * @returns {Array<Entry>}
    */
-  get items() {
+  get items () {
     return this._entries
   }
 
@@ -44,7 +44,7 @@ class Log {
    * Returns a list of heads as multihashes
    * @returns {Array<string>}
    */
-  get heads() {
+  get heads () {
     return this._heads
   }
 
@@ -53,7 +53,7 @@ class Log {
    * @param {string} [hash] The Multihash of the entry as Base58 encoded string
    * @returns {Entry|undefined}
    */
-  get(hash) {
+  get (hash) {
     return this.items.find((e) => e.hash === hash)
   }
 
@@ -65,7 +65,7 @@ class Log {
    *   └─three
    * @returns {string}
    */
-  toString() {
+  toString () {
     return this.items
       .slice()
       .reverse()
@@ -84,7 +84,7 @@ class Log {
    * Get the log in JSON format
    * @returns {Object<{heads}>}
    */
-  toJSON() {
+  toJSON () {
     return { heads: this.heads.slice() }
   }
 
@@ -92,7 +92,7 @@ class Log {
    * Get the log as a Buffer
    * @returns {Buffer}
    */
-  toBuffer() {
+  toBuffer () {
     return new Buffer(JSON.stringify(this.toJSON()))
   }
 }
@@ -105,7 +105,7 @@ class LogUtils {
    * @param {Array} [heads] - Heads for this log
    * @returns {Log}
    */
-  static create(ipfs, entries, heads) {
+  static create (ipfs, entries, heads) {
     if (!ipfs) throw IpfsNotDefinedError
 
     // If entries were given but not the heads, find them
@@ -121,10 +121,10 @@ class LogUtils {
    * @param {IPFS} ipfs An IPFS instance
    * @param {string} hash Multihash as Base58 encoded string of the entry to start from
    * @param {Number} [length=-1] How many entries to include. Default: infinite.
-   * @param {function(hash, entry, parent, depth)} onProgressCallback 
+   * @param {function(hash, entry, parent, depth)} onProgressCallback
    * @returns {Promise<Log>}
    */
-  static fromEntry(ipfs, hash, length = -1, onProgressCallback) {
+  static fromEntry (ipfs, hash, length = -1, onProgressCallback) {
     if (!ipfs) throw IpfsNotDefinedError
 
     return LogUtils._fetchRecursive(ipfs, hash, {}, length, 0, null, onProgressCallback)
@@ -141,10 +141,10 @@ class LogUtils {
    * @param {IPFS} ipfs - An IPFS instance
    * @param {string} hash - Multihash (as a Base58 encoded string) to create the log from
    * @param {Number} [length=-1] - How many items to include in the log
-   * @param {function(hash, entry, parent, depth)} onProgressCallback 
+   * @param {function(hash, entry, parent, depth)} onProgressCallback
    * @returns {Promise<Log>}
    */
-  static fromMultihash(ipfs, hash, length = -1, onProgressCallback) {
+  static fromMultihash (ipfs, hash, length = -1, onProgressCallback) {
     if (!ipfs) throw IpfsNotDefinedError
     if (!hash) throw new Error('Invalid hash: ' + hash)
 
@@ -157,8 +157,8 @@ class LogUtils {
           .sort(LogUtils._compare)
           .map((f) => LogUtils.fromEntry(ipfs, f, length, onProgressCallback))
         // Join all logs together to one log
-        const joinAll = (logs) => LogUtils.joinAll(ipfs, logs)
-        return Promise.all(allLogs).then(joinAll)
+        return Promise.all(allLogs)
+          .then((logs) => LogUtils.joinAll(ipfs, logs))
       })
   }
 
@@ -168,7 +168,7 @@ class LogUtils {
    * @param {Log} log Log to persist
    * @returns {Promise<string>}
    */
-  static toMultihash(ipfs, log) {
+  static toMultihash (ipfs, log) {
     if (!ipfs) throw IpfsNotDefinedError
     if (!log) throw LogNotDefinedError
 
@@ -191,7 +191,7 @@ class LogUtils {
    *
    * @returns {Promise<Log>}
    */
-  static append(ipfs, log, data) {
+  static append (ipfs, log, data) {
     if (!ipfs) throw IpfsNotDefinedError
     if (!log) throw LogNotDefinedError
 
@@ -209,7 +209,7 @@ class LogUtils {
 
   /**
    * Join two logs
-   * 
+   *
    * @description Joins two logs returning a new log. Doesn't mutate the original logs.
    *
    * @param {IPFS} [ipfs] An IPFS instance
@@ -218,16 +218,16 @@ class LogUtils {
    *
    * @example
    * const log = Log.join(ipfs, log1, log2)
-   * 
+   *
    * @returns {Log}
    */
-  static join(ipfs, a, b, size) {
+  static join (ipfs, a, b, size) {
     if (!ipfs) throw IpfsNotDefinedError
     if (!a || !b) throw LogNotDefinedError
     if (!a.items || !b.items) throw new Error('Log to join must be an instance of Log')
 
     // If size is not specified, join all entries by default
-    size = size ? size : a.items.length + b.items.length
+    size = size !== undefined ? size : a.items.length + b.items.length
 
     // Get the heads from both logs and sort them by their IDs
     const getHeadEntries = (log) => {
@@ -268,7 +268,7 @@ class LogUtils {
    * @param {Array<Log>} logs
    * @returns {Log}
    */
-  static joinAll(ipfs, logs) {
+  static joinAll (ipfs, logs) {
     if (!ipfs) throw IpfsNotDefinedError
 
     return logs.reduce((log, val, i) => {
@@ -285,7 +285,7 @@ class LogUtils {
    * @param {function(hash, entry, parent, depth)} onProgressCallback
    * @returns {Promise<Log>}
    */
-  static expand(ipfs, log, length = -1, onProgressCallback) {
+  static expand (ipfs, log, length = -1, onProgressCallback) {
     if (!ipfs) throw IpfsNotDefinedError
     if (!log) throw LogNotDefinedError
 
@@ -305,7 +305,7 @@ class LogUtils {
    * @param {Entry} entry Entry to be inserted
    * @returns {Entry}
    */
-  static _insert(ipfs, log, entry) {
+  static _insert (ipfs, log, entry) {
     if (!ipfs) throw IpfsNotDefinedError
     if (!log) throw LogNotDefinedError
 
@@ -333,7 +333,7 @@ class LogUtils {
    * @param {function(hash, entry, parent, depth)} onProgressCallback
    * @returns {Promise<Array<Entry>>}
    */
-  static _fetchRecursive(ipfs, hash, all = {}, amount = -1, depth = 0, parent = null, onProgressCallback = () => {}) {
+  static _fetchRecursive (ipfs, hash, all = {}, amount = -1, depth = 0, parent = null, onProgressCallback = () => {}) {
     if (!ipfs) throw IpfsNotDefinedError
 
     // If the given hash is already fetched
@@ -359,7 +359,7 @@ class LogUtils {
    * @param {Log} log
    * @returns {Array<Entry>}
    */
-  static _findHeads(entries) {
+  static _findHeads (entries) {
     return entries.slice()
       .reverse()
       .filter((f) => !LogUtils._isReferencedInChain(entries, f))
@@ -374,7 +374,7 @@ class LogUtils {
    * @param {Entry} [entry] Entry to search for
    * @returns {boolean}
    */
-  static _isReferencedInChain(entries, entry) {
+  static _isReferencedInChain (entries, entry) {
     return entries.slice().reverse().find((e) => Entry.hasChild(e, entry)) !== undefined
   }
 
@@ -386,7 +386,7 @@ class LogUtils {
    * @param {Entry} [entry] Entry for which to find the parents
    * @returns {Array<Entry>}
    */
-  static _findParents(entries, entry) {
+  static _findParents (entries, entry) {
     let stack = []
     let parent = entries.find((e) => Entry.hasChild(e, entry))
     let prev = entry
@@ -403,7 +403,7 @@ class LogUtils {
    * @private
    * @returns {boolean}
    */
-  static _compare(a, b) {
+  static _compare (a, b) {
     return a < b
   }
 }

@@ -14,7 +14,7 @@ class Entry {
    * // { hash: "Qm...Foo", payload: "hello", next: [] }
    * @returns {Promise<Entry>}
    */
-  static create(ipfs, data = null, next = []) {
+  static create (ipfs, data = null, next = []) {
     if (!ipfs) throw IpfsNotDefinedError
     if (!next || !Array.isArray(next)) throw new Error("'next' argument is not an array")
 
@@ -45,7 +45,7 @@ class Entry {
    * // "Qm...Foo"
    * @returns {Promise<string>}
    */
-  static toMultihash(ipfs, entry) {
+  static toMultihash (ipfs, entry) {
     if (!ipfs) throw IpfsNotDefinedError
     const data = new Buffer(JSON.stringify(entry))
     return ipfs.object.put(data)
@@ -62,9 +62,9 @@ class Entry {
    * // { hash: "Qm...Foo", payload: "hello", next: [] }
    * @returns {Promise<Entry>}
    */
-  static fromMultihash(ipfs, hash) {
+  static fromMultihash (ipfs, hash) {
     if (!ipfs) throw IpfsNotDefinedError
-    if (!hash) throw new Error("Invalid hash: " + hash)
+    if (!hash) throw new Error(`Invalid hash: ${hash}`)
     return ipfs.object.get(hash, { enc: 'base58' })
       .then((obj) => JSON.parse(obj.toJSON().data))
       .then((data) => {
@@ -83,7 +83,7 @@ class Entry {
    * @param {Entry} [entry2] Child
    * @returns {boolean}
    */
-  static hasChild(entry1, entry2) {
+  static hasChild (entry1, entry2) {
     return entry1.next.includes(entry2.hash)
   }
 
@@ -93,7 +93,7 @@ class Entry {
    * @param {Entry} b
    * @returns {boolean}
    */
-  static isEqual(a, b) {
+  static isEqual (a, b) {
     return a.hash === b.hash
   }
 }
