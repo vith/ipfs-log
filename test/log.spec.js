@@ -6,7 +6,7 @@ const await = require('asyncawait/await')
 const rmrf = require('rimraf')
 const IpfsNodeDaemon = require('ipfs-daemon/src/ipfs-node-daemon')
 const IpfsNativeDaemon = require('ipfs-daemon/src/ipfs-native-daemon')
-const Log = require('../src/log')
+const Log = require('../src/log.js')
 const Entry = require('../src/entry')
 
 const dataDir = './ipfs'
@@ -411,7 +411,7 @@ const last = (arr) => {
           const prev1 = last(items1)
           const prev2 = last(items2)
           const prev3 = last(items3)
-          const n1 = await(Entry.create(ipfs, 'entryA' + i, prev1))
+          const n1 = await(Entry.create(ipfs, 'entryA' + i, [prev1]))
           const n2 = await(Entry.create(ipfs, 'entryB' + i, [prev2, n1]))
           const n3 = await(Entry.create(ipfs, 'entryC' + i, [prev3, n1, n2]))
           items1.push(n1)
@@ -588,7 +588,7 @@ const last = (arr) => {
           const prev1 = last(items1)
           const prev2 = last(items2)
           const prev3 = last(items3)
-          const n1 = await(Entry.create(ipfs, 'entryA' + i, prev1))
+          const n1 = await(Entry.create(ipfs, 'entryA' + i, [prev1]))
           const n2 = await(Entry.create(ipfs, 'entryB' + i, [prev2, n1]))
           const n3 = await(Entry.create(ipfs, 'entryC' + i, [prev3, n2]))
           items1.push(n1)
@@ -679,7 +679,7 @@ const last = (arr) => {
         const amount = 100
         for(let i = 1; i <= amount; i ++) {
           const prev1 = last(items1)
-          const n1 = await(Entry.create(ipfs, 'entryA' + i, prev1))
+          const n1 = await(Entry.create(ipfs, 'entryA' + i, [prev1]))
           items1.push(n1)
         }
 
@@ -716,7 +716,7 @@ const last = (arr) => {
           const prev1 = last(items1)
           const prev2 = last(items2)
           const prev3 = last(items3)
-          const n1 = await(Entry.create(ipfs, 'entryA' + i, prev1))
+          const n1 = await(Entry.create(ipfs, 'entryA' + i, [prev1]))
           const n2 = await(Entry.create(ipfs, 'entryB' + i, [prev2, n1]))
           const n3 = await(Entry.create(ipfs, 'entryC' + i, [prev3, n2]))
           items1.push(n1)
@@ -744,7 +744,7 @@ const last = (arr) => {
           const prev1 = last(items1)
           const prev2 = last(items2)
           const prev3 = last(items3)
-          const n1 = await(Entry.create(ipfs, 'entryA' + i, prev1))
+          const n1 = await(Entry.create(ipfs, 'entryA' + i, [prev1]))
           const n2 = await(Entry.create(ipfs, 'entryB' + i, [prev2, n1]))
           const n3 = await(Entry.create(ipfs, 'entryC' + i, [prev3, n2]))
           items1.push(n1)
@@ -774,7 +774,7 @@ const last = (arr) => {
           const prev1 = last(items1)
           const prev2 = last(items2)
           const prev3 = last(items3)
-          const n1 = await(Entry.create(ipfs, 'entryA' + i, prev1))
+          const n1 = await(Entry.create(ipfs, 'entryA' + i, [prev1]))
           const n2 = await(Entry.create(ipfs, 'entryB' + i, [prev2, n1]))
           const n3 = await(Entry.create(ipfs, 'entryC' + i, [prev3, n1, n2]))
           items1.push(n1)
@@ -804,7 +804,7 @@ const last = (arr) => {
           const prev1 = last(items1)
           const prev2 = last(items2)
           const prev3 = last(items3)
-          const n1 = await(Entry.create(ipfs, 'entryA' + i, prev1))
+          const n1 = await(Entry.create(ipfs, 'entryA' + i, [prev1]))
           const n2 = await(Entry.create(ipfs, 'entryB' + i, [prev2, n1]))
           const n3 = await(Entry.create(ipfs, 'entryC' + i, [prev3, n1, n2]))
           items1.push(n1)
@@ -864,7 +864,7 @@ const last = (arr) => {
         const amount = 1000
         for(let i = 1; i <= amount; i ++) {
           const prev = last(entrys)
-          const n = await(Entry.create(ipfs, 'entry' + i, prev))
+          const n = await(Entry.create(ipfs, 'entry' + i, [prev]))
           entrys.push(n)
         }
 
@@ -881,7 +881,7 @@ const last = (arr) => {
       it('returns two items when neither are in the log', async(() => {
         const log1 = Log.create(ipfs)
         const entry1 = await(Entry.create(ipfs, 'one'))
-        const entry2 = await(Entry.create(ipfs, 'two', entry1))
+        const entry2 = await(Entry.create(ipfs, 'two', [entry1]))
         const items = await(Log._fetchRecursive(ipfs, entry2.hash))
         assert.equal(items.length, 2)
         assert.equal(items[0].hash, 'QmUrqiypsLPAWN24Y3gHarmDTgvW97bTUiXnqN53ySXM9V')
@@ -891,8 +891,8 @@ const last = (arr) => {
       it('returns three items when none are in the log', async(() => {
         const log1 = Log.create(ipfs)
         const entry1 = await(Entry.create(ipfs, 'one'))
-        const entry2 = await(Entry.create(ipfs, 'two', entry1))
-        const entry3 = await(Entry.create(ipfs, 'three', entry2))
+        const entry2 = await(Entry.create(ipfs, 'two', [entry1]))
+        const entry3 = await(Entry.create(ipfs, 'three', [entry2]))
         const items = await(Log._fetchRecursive(ipfs, entry3.hash))
         assert.equal(items.length, 3)
         assert.equal(items[0].hash, 'QmUrqiypsLPAWN24Y3gHarmDTgvW97bTUiXnqN53ySXM9V')
@@ -906,7 +906,7 @@ const last = (arr) => {
         const amount = 100
         for(let i = 1; i <= amount; i ++) {
           const prev = last(entries)
-          const n = await(Entry.create(ipfs, 'entry' + i, prev))
+          const n = await(Entry.create(ipfs, 'entry' + i, [prev]))
           entries.push(n)
         }
 
@@ -920,8 +920,8 @@ const last = (arr) => {
         let log1 = Log.create(ipfs)
         log1 = await(Log.append(ipfs, log1, 'one'))
         const entry1 = log1.items[0]
-        const entry2 = await(Entry.create(ipfs, 'two', entry1))
-        const entry3 = await(Entry.create(ipfs, 'three', entry2))
+        const entry2 = await(Entry.create(ipfs, 'two', [entry1]))
+        const entry3 = await(Entry.create(ipfs, 'three', [entry2]))
         let allHashes = {}
         log1.items.forEach((a) => allHashes[a.hash] = a)
         const items = await(Log._fetchRecursive(ipfs, entry3.hash, allHashes))
@@ -1063,7 +1063,7 @@ const last = (arr) => {
         log = await(Log.append(ipfs, log, 'one'))
         log = await(Log.append(ipfs, log, 'two'))
         const entry1 = log.items[0]
-        const res = Log._isReferencedInChain(log, entry1)
+        const res = Log._isReferencedInChain(log.items, entry1)
         assert.equal(res, true)
       }))
 
@@ -1072,7 +1072,7 @@ const last = (arr) => {
         log = await(Log.append(ipfs, log, 'one'))
         log = await(Log.append(ipfs, log, 'two'))
         const entry2 = last(log.items)
-        const res = Log._isReferencedInChain(log, entry2)
+        const res = Log._isReferencedInChain(log.items, entry2)
         assert.equal(res, false)
       }))
     })
@@ -1083,7 +1083,7 @@ const last = (arr) => {
         log = await(Log.append(ipfs, log, 'one'))
         log = await(Log.append(ipfs, log, 'two'))
         const entry1 = log.items[0]
-        const entry3 = await(Entry.create(ipfs, 'three', entry1))
+        const entry3 = await(Entry.create(ipfs, 'three', [entry1]))
         Log._insert(ipfs, log, entry3)
         assert.equal(log.items.length, 3)
         assert.equal(log.items[0].payload, 'one')

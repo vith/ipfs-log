@@ -1,11 +1,13 @@
 'use strict'
 
+const IpfsNotDefinedError = new Error('Ipfs instance not defined')
+
 class Entry {
   /**
    * Create an Entry
    * @param {IPFS} ipfs - An IPFS instance
    * @param {string|Buffer|Object|Array} data - Data of the entry to be added
-   * @param {Array<Entry>} [next=[]] Parents of the entry
+   * @param {Array<Entry|string>} [next=[]] Parents of the entry
    * @example
    * const entry = await Entry.create(ipfs, 'hello')
    * console.log(entry)
@@ -13,17 +15,17 @@ class Entry {
    * @returns {Promise<Entry>}
    */
   static create(ipfs, data = null, next = []) {
-    if (!ipfs) throw new Error("Entry requires ipfs instance")
+    if (!ipfs) throw IpfsNotDefinedError
+    if (!next || !Array.isArray(next)) throw new Error("'next' argument is not an array")
 
-    // convert single objects to an array and entry objects to single hashes
-    let nexts = next !== null && Array.isArray(next)
-      ? next.filter((e) => e !== undefined).map((e) => e.hash ? e.hash : e) 
-      : [(next !== null && next.hash ? next.hash : next)]
+    // Clean the next objects and convert to hashes
+    let nexts = next.filter((e) => e !== undefined & e !== null)
+      .map((e) => e.hash ? e.hash : e)
 
     let entry = {
-      hash: null, // "Qm...Foo", we'll set the hash after ipfsfying the data structure, 
+      hash: null, // "Qm...Foo", we'll set the hash after persisting the entry
       payload: data, // Can be any JSON.stringifyable data
-      next: nexts // Array of IPFS hashes
+      next: nexts // Array of Multihashes
     }
 
     return Entry.toMultihash(ipfs, entry)
@@ -45,7 +47,7 @@ class Entry {
    * @returns {Promise<string>}
    */
   static toMultihash(ipfs, entry) {
-    if (!ipfs) throw new Error("Entry requires ipfs instance")
+    if (!ipfs) throw IpfsNotDefinedError
     const data = new Buffer(JSON.stringify(entry))
     return ipfs.object.put(data)
       .then((res) => res.toJSON().multihash)
@@ -62,7 +64,7 @@ class Entry {
    * @returns {Promise<Entry>}
    */
   static fromMultihash(ipfs, hash) {
-    if (!ipfs) throw new Error("Entry requires ipfs instance")
+    if (!ipfs) throw IpfsNotDefinedError
     if (!hash) throw new Error("Invalid hash: " + hash)
     return ipfs.object.get(hash, { enc: 'base58' })
       .then((obj) => JSON.parse(obj.toJSON().data))
@@ -92,15 +94,8 @@ class Entry {
    * @param {Entry} b
    * @returns {boolean}
    */
-  static compare(a, b) {
-    return a.hash === b.hash
-  }
-
-  /**
-   * @alias compare
-   */
   static isEqual(a, b) {
-    return compare(a, b)
+    return a.hash === b.hash
   }
 }
 

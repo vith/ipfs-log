@@ -12,12 +12,8 @@ const dataDir = './ipfs'
 
 let ipfs, ipfsDaemon
 
-// For some reason js-ipfs starts throwing 'libp2p not started yet'
-// if Entry is tested with js-ipfs before testing Log. Only test Entry
-// with Native daemon until that's fixed.
-[IpfsNativeDaemon].forEach((IpfsDaemon) => {
 // [IpfsNodeDaemon].forEach((IpfsDaemon) => {
-// [IpfsNodeDaemon, IpfsNativeDaemon].forEach((IpfsDaemon) => {
+[IpfsNodeDaemon, IpfsNativeDaemon].forEach((IpfsDaemon) => {
 
   describe('Entry', function() {
     this.timeout(60000)
@@ -57,21 +53,27 @@ let ipfs, ipfsDaemon
         const payload1 = 'hello world'
         const payload2 = 'hello again'
         const entry1 = await(Entry.create(ipfs, payload1))
-        const entry2 = await(Entry.create(ipfs, payload2, entry1))
+        const entry2 = await(Entry.create(ipfs, payload2, [entry1]))
         assert.equal(entry2.payload, payload2)
         assert.equal(entry2.next.length, 1)
         assert.equal(entry2.hash, expectedHash)
       }))
 
-      it('`next` parameter can be a string', async(() => {
+      it('`next` parameter can be an array of strings', async(() => {
         const entry1 = await(Entry.create(ipfs, null))
-        const entry2 = await(Entry.create(ipfs, null, entry1.hash))
+        const entry2 = await(Entry.create(ipfs, null, [entry1.hash]))
         assert.equal(typeof entry2.next[0] === 'string', true)
       }))
 
-      it('`next` parameter can be an instance of Entry', async(() => {
+      it('`next` parameter can be an array of Entry instances', async(() => {
         const entry1 = await(Entry.create(ipfs, null))
-        const entry2 = await(Entry.create(ipfs, null, entry1))
+        const entry2 = await(Entry.create(ipfs, null, [entry1]))
+        assert.equal(typeof entry2.next[0] === 'string', true)
+      }))
+
+      it('`next` parameter can contain nulls and undefined objects', async(() => {
+        const entry1 = await(Entry.create(ipfs, null))
+        const entry2 = await(Entry.create(ipfs, null, [entry1, null, undefined]))
         assert.equal(typeof entry2.next[0] === 'string', true)
       }))
 
@@ -79,7 +81,7 @@ let ipfs, ipfsDaemon
         try {
           const entry = await(Entry.create())
         } catch(e) {
-          assert.equal(e.message, 'Entry requires ipfs instance')
+          assert.equal(e.message, 'Ipfs instance not defined')
         }
       }))
 
@@ -115,7 +117,7 @@ let ipfs, ipfsDaemon
         const payload1 = 'hello world'
         const payload2 = 'hello again'
         const entry1 = await(Entry.create(ipfs, payload1))
-        const entry2 = await(Entry.create(ipfs, payload2, entry1))
+        const entry2 = await(Entry.create(ipfs, payload2, [entry1]))
         const final = await(Entry.fromMultihash(ipfs, entry2.hash))
         assert.equal(final.payload, payload2)
         assert.equal(final.next.length, 1)
@@ -127,7 +129,7 @@ let ipfs, ipfsDaemon
         try {
           const entry = await(Entry.fromMultihash())
         } catch(e) {
-          assert.equal(e.message, 'Entry requires ipfs instance')
+          assert.equal(e.message, 'Ipfs instance not defined')
         }
       }))
 
@@ -145,7 +147,7 @@ let ipfs, ipfsDaemon
         const payload1 = 'hello world'
         const payload2 = 'hello again'
         const entry1 = await(Entry.create(ipfs, payload1))
-        const entry2 = await(Entry.create(ipfs, payload2, entry1))
+        const entry2 = await(Entry.create(ipfs, payload2, [entry1]))
         assert.equal(Entry.hasChild(entry2, entry1), true)
       }))
 
@@ -154,7 +156,7 @@ let ipfs, ipfsDaemon
         const payload2 = 'hello again'
         const entry1 = await(Entry.create(ipfs, payload1))
         const entry2 = await(Entry.create(ipfs, payload2))
-        const entry3 = await(Entry.create(ipfs, payload2, entry2))
+        const entry3 = await(Entry.create(ipfs, payload2, [entry2]))
         assert.equal(Entry.hasChild(entry2, entry1), false)
         assert.equal(Entry.hasChild(entry3, entry1), false)
         assert.equal(Entry.hasChild(entry3, entry2), true)
@@ -166,7 +168,7 @@ let ipfs, ipfsDaemon
         const payload1 = 'hello world'
         const entry1 = await(Entry.create(ipfs, payload1))
         const entry2 = await(Entry.create(ipfs, payload1))
-        assert.equal(Entry.compare(entry1, entry2), true)
+        assert.equal(Entry.isEqual(entry1, entry2), true)
       }))
 
       it('returns true if entries are not the same', async(() => {
@@ -174,7 +176,7 @@ let ipfs, ipfsDaemon
         const payload2 = 'hello world2'
         const entry1 = await(Entry.create(ipfs, payload1))
         const entry2 = await(Entry.create(ipfs, payload2))
-        assert.equal(Entry.compare(entry1, entry2), false)
+        assert.equal(Entry.isEqual(entry1, entry2), false)
       }))
     })
   })

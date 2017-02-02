@@ -29,7 +29,7 @@ const LogNotDefinedError = new Error('Log instance not defined')
 class Log {
   constructor(ipfs, entries, heads) {
     this._entries = entries || []
-    this._heads = heads || LogUtils._findHeads(this) || []
+    this._heads = heads || []
   }
 
   /**
@@ -71,7 +71,7 @@ class Log {
       .slice()
       .reverse()
       .map((e, idx) => {
-        const parents = LogUtils._findParents(this, e)
+        const parents = LogUtils._findParents(this.items, e)
         const len = parents.length
         let padding = new Array(Math.max(len - 1, 0))
         padding = len > 1 ? padding.fill('  ') : padding
@@ -110,8 +110,11 @@ class LogUtils {
   static create(ipfs, entries, heads) {
     if (!ipfs) throw IpfsNotDefinedError
 
-    // TODO: if (Array.isArray(entries))
-    // TODO: entries.map((e) => Entry.isEntry(e) ? e : await Entry.create(ipfs, e))
+    // If entries were given but not the heads, find them
+    if (Array.isArray(entries) && !heads) {
+      heads = LogUtils._findHeads(entries)
+    }
+
     return new Log(ipfs, entries, heads)
   }
 
@@ -131,7 +134,7 @@ class LogUtils {
       .then((items) => {
         let log = LogUtils.create(ipfs)
         items.reverse().forEach((e) => LogUtils._insert(ipfs, log, e))
-        log._heads = LogUtils._findHeads(log)
+        log._heads = LogUtils._findHeads(log.items)
         return log
       })
   }
@@ -354,10 +357,10 @@ class LogUtils {
    * @param {Log} log
    * @returns {Array<Entry>}
    */
-  static _findHeads(log) {
-    return log.items.slice()
+  static _findHeads(entries) {
+    return entries.slice()
       .reverse()
-      .filter((f) => !LogUtils._isReferencedInChain(log, f))
+      .filter((f) => !LogUtils._isReferencedInChain(entries, f))
       .map((f) => f.hash)
       .sort(LogUtils._compare)
   }
@@ -369,8 +372,8 @@ class LogUtils {
    * @param {Entry} [entry] Entry to search for
    * @returns {boolean}
    */
-  static _isReferencedInChain(log, entry) {
-    return log.items.slice().reverse().find((e) => Entry.hasChild(e, entry)) !== undefined
+  static _isReferencedInChain(entries, entry) {
+    return entries.slice().reverse().find((e) => Entry.hasChild(e, entry)) !== undefined
   }
 
   /**
@@ -381,14 +384,14 @@ class LogUtils {
    * @param {Entry} [entry] Entry for which to find the parents
    * @returns {Array<Entry>}
    */
-  static _findParents(log, entry) {
+  static _findParents(entries, entry) {
     let stack = []
-    let parent = log.items.find((e) => Entry.hasChild(e, entry))
+    let parent = entries.find((e) => Entry.hasChild(e, entry))
     let prev = entry
     while (parent) {
       stack.push(parent)
       prev = parent
-      parent = log.items.find((e) => Entry.hasChild(e, prev))
+      parent = entries.find((e) => Entry.hasChild(e, prev))
     }
     return stack
   }
