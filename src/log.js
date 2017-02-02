@@ -66,7 +66,7 @@ class Log {
    * @param {boolean} [withHash=false] - If set to 'true', the hash of the entry is included
    * @returns {string}
    */
-  toString(withHash) {
+  toString() {
     return this.items
       .slice()
       .reverse()
@@ -76,7 +76,7 @@ class Log {
         let padding = new Array(Math.max(len - 1, 0))
         padding = len > 1 ? padding.fill('  ') : padding
         padding = len > 0 ? padding.concat(['└─']) : padding
-        return padding.join('') + (withHash ? e.hash + ' ' : '') + e.payload
+        return padding.join('') + e.payload
       })
       .join('\n')
   }
@@ -345,7 +345,7 @@ class LogUtils {
         all[hash] = entry
         onProgressCallback(hash, entry, parent, depth)
         const fetch = (hash) => LogUtils._fetchRecursive(ipfs, hash, all, amount, depth + 1, entry, onProgressCallback)
-        return mapSeries(entry.next, fetch, { concurrency: 1 })
+        return mapSeries(entry.next, fetch)
           .then((res) => res.concat([entry]))
           .then((res) => res.reduce((a, b) => a.concat(b), [])) // flatten the array
       })
