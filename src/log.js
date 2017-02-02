@@ -49,8 +49,8 @@ class Log {
   }
 
   /**
-   * Find a log entry
-   * @param {string} [hash] [The multihash of the entry]
+   * Find an entry
+   * @param {string} [hash] The Multihash of the entry as Base58 encoded string
    * @returns {Entry|undefined}
    */
   get(hash) {
@@ -63,7 +63,6 @@ class Log {
    * two
    * └─one
    *   └─three
-   * @param {boolean} [withHash=false] - If set to 'true', the hash of the entry is included
    * @returns {string}
    */
   toString() {
@@ -102,7 +101,6 @@ class LogUtils {
   /**
    * Create a new log
    * @param {IPFS} ipfs An IPFS instance
-   * @param {string} id - ID for the log
    * @param {Array} [entries] - Entries for this log
    * @param {Array} [heads] - Heads for this log
    * @returns {Log}
@@ -120,11 +118,10 @@ class LogUtils {
 
   /**
    * Create a new log starting from an entry
-   * @param {IPFS} [ipfs] An IPFS instance
-   * @param {string} id
-   * @param {string} [hash] [Multihash of the entry to start from]
-   * @param {Number} length
-   * @param {function(hash, entry, parent, depth)} onProgressCallback
+   * @param {IPFS} ipfs An IPFS instance
+   * @param {string} hash Multihash as Base58 encoded string of the entry to start from
+   * @param {Number} [length=-1] How many entries to include. Default: infinite.
+   * @param {function(hash, entry, parent, depth)} onProgressCallback 
    * @returns {Promise<Log>}
    */
   static fromEntry(ipfs, hash, length = -1, onProgressCallback) {
@@ -141,9 +138,10 @@ class LogUtils {
 
   /**
    * Create a log from multihash
-   * @param {IPFS} [ipfs] An IPFS instance
-   * @param {string} [hash] Multihash (as a Base58 encoded string) to create the log from
-   * @param {Number} [length=-1] How many items to include in the log
+   * @param {IPFS} ipfs - An IPFS instance
+   * @param {string} hash - Multihash (as a Base58 encoded string) to create the log from
+   * @param {Number} [length=-1] - How many items to include in the log
+   * @param {function(hash, entry, parent, depth)} onProgressCallback 
    * @returns {Promise<Log>}
    */
   static fromMultihash(ipfs, hash, length = -1, onProgressCallback) {
@@ -166,8 +164,8 @@ class LogUtils {
 
   /**
    * Get the log's multihash
-   * @param {IPFS} [ipfs] An IPFS instance
-   * @param {Log} log
+   * @param {IPFS} ipfs An IPFS instance
+   * @param {Log} log Log to persist
    * @returns {Promise<string>}
    */
   static toMultihash(ipfs, log) {
@@ -187,7 +185,11 @@ class LogUtils {
    * @param {IPFS} ipfs An IPFS instance
    * @param {Log} log - The Log to add the entry to
    * @param {string|Buffer|Object|Array} data - Data of the entry to be added
-   * @returns {Log}
+   *
+   * @example
+   * const log2 = Log.append(ipfs, log1, 'hello again')
+   *
+   * @returns {Promise<Log>}
    */
   static append(ipfs, log, data) {
     if (!ipfs) throw IpfsNotDefinedError

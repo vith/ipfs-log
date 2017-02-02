@@ -6,7 +6,7 @@ class Entry {
   /**
    * Create an Entry
    * @param {IPFS} ipfs - An IPFS instance
-   * @param {string|Buffer|Object|Array} data - Data of the entry to be added
+   * @param {string|Buffer|Object|Array} data - Data of the entry to be added. Can be any JSON.stringifyable data.
    * @param {Array<Entry|string>} [next=[]] Parents of the entry
    * @example
    * const entry = await Entry.create(ipfs, 'hello')
@@ -38,8 +38,7 @@ class Entry {
   /**
    * Get the multihash of an Entry
    * @param {IPFS} [ipfs] An IPFS instance
-   * @param {string|Buffer|Object|Array} [data] Data of the entry to be added
-   * @param {Array<Entry>} [next=[]] Parents of the entry
+   * @param {Entry} [entry] Entry to get a multihash for
    * @example
    * const hash = await Entry.toMultihash(ipfs, entry)
    * console.log(hash)
@@ -56,7 +55,7 @@ class Entry {
   /**
    * Create an Entry from a multihash
    * @param {IPFS} [ipfs] An IPFS instance
-   * @param {string} [hash] Multihash to create an Entry from
+   * @param {string} [hash] Multihash as Base58 encoded string to create an Entry from
    * @example
    * const hash = await Entry.fromMultihash(ipfs, "Qm...Foo")
    * console.log(hash)
@@ -80,7 +79,7 @@ class Entry {
 
   /**
    * Check if an entry has another entry as its child
-   * @param {Entry} [entry1] Entry to check from
+   * @param {Entry} [entry1] Entry to check
    * @param {Entry} [entry2] Child
    * @returns {boolean}
    */
