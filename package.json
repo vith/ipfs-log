@@ -28,6 +28,7 @@
     "test": "mocha",
     "build": "npm run build:examples && npm run build:dist",
     "build:examples": "webpack --config webpack.example.config.js --sort-modules-by size",
-    "build:dist": "webpack -p --config webpack.config.js --display-modules --sort-modules-by size"
+    "build:dist": "webpack -p --config webpack.config.js --display-modules --sort-modules-by size",
+    "benchmark": "node benchmarks/index.js"
   }
 }
