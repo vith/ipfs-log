@@ -5,3 +5,4 @@ examples/browser/bundle.js
 ipfs/
 stats.json
 dist/*.js.map
+coverage/

@@ -38,8 +38,8 @@ suite.add('join', (d) => {
     Log.append(ipfs, log2, 'b' + i)
   ])
     .then((res) => {
-      log1 = Log.join(ipfs, res[0], res[1], 60)
-      log2 = Log.join(ipfs, res[1], res[0], 60)
+      log1 = Log.join(res[0], res[1], 60)
+      log2 = Log.join(res[1], res[0], 60)
       d.resolve()
     })
     .catch((e) => console.error(e))
@@ -49,13 +49,13 @@ suite.add('join', (d) => {
 })
 
 ipfs.on('ready', () => {
-  log1 = Log.create(ipfs)
-  log2 = Log.create(ipfs)
+  log1 = Log.create('A')
+  log2 = Log.create('B')
 
   suite
     .on('cycle', (event) => {
-      log1 = Log.create(ipfs)
-      log2 = Log.create(ipfs)
+      log1 = Log.create('A')
+      log2 = Log.create('B')
       i = 0
       console.log(String(event.target))
     })

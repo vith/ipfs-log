@@ -4,16 +4,14 @@ const assert = require('assert')
 const async = require('asyncawait/async')
 const await = require('asyncawait/await')
 const rmrf = require('rimraf')
-const IpfsNodeDaemon = require('ipfs-daemon/src/ipfs-node-daemon')
-const IpfsNativeDaemon = require('ipfs-daemon/src/ipfs-native-daemon')
+const apis = require('./test-apis')
 const Entry = require('../src/entry')
 
 const dataDir = './ipfs'
 
 let ipfs, ipfsDaemon
 
-// [IpfsNodeDaemon].forEach((IpfsDaemon) => {
-[IpfsNodeDaemon, IpfsNativeDaemon].forEach((IpfsDaemon) => {
+apis.forEach((IpfsDaemon) => {
 
   describe('Entry', function() {
     this.timeout(60000)
@@ -32,48 +30,50 @@ let ipfs, ipfsDaemon
 
     describe('create', () => {
       it('creates a an empty entry', async(() => {
-        const expectedHash = 'QmV6eNeSZLnJDQcGou6HEiPQxipEgVam3B3onFSNmgpD4i'
-        const entry = await(Entry.create(ipfs))
+        const expectedHash = 'QmWMw3SWqb4cK9awTjpr39bxj966PjLEFtc8XudJoAgd56'
+        const entry = await(Entry.create(ipfs, 'A'))
         assert.equal(entry.hash, expectedHash)
+        assert.equal(entry.id, 'A')
         assert.equal(entry.payload, null)
         assert.equal(entry.next.length, 0)
       }))
 
       it('creates a entry with payload', async(() => {
-        const expectedHash = 'QmTVyxLqh3qZkWZbpxkjX5hd4WXADWDxt2EamFApfYpsRv'
+        const expectedHash = 'QmYVAKgyD9yhURZRT1Tx1diWsrY1yGbw9sM8QPRvocLhhn'
         const payload = 'hello world'
-        const entry = await(Entry.create(ipfs, payload))
+        const entry = await(Entry.create(ipfs, 'A', payload))
         assert.equal(entry.payload, payload)
+        assert.equal(entry.id, 'A')
         assert.equal(entry.next.length, 0)
         assert.equal(entry.hash, expectedHash)
       }))
 
       it('creates a entry with payload and next', async(() => {
-        const expectedHash = 'QmRzyeUuW5F8zxmEgJG3wRPH3i3W7iwPweza7UUHhXfK93'
+        const expectedHash = 'QmTfrtKieCTyEPzfVQswkxJkfSe8h8RqAmmy7KNmqqBfx1'
         const payload1 = 'hello world'
         const payload2 = 'hello again'
-        const entry1 = await(Entry.create(ipfs, payload1))
-        const entry2 = await(Entry.create(ipfs, payload2, [entry1]))
+        const entry1 = await(Entry.create(ipfs, 'A', payload1))
+        const entry2 = await(Entry.create(ipfs, 'A', payload2, [entry1]))
         assert.equal(entry2.payload, payload2)
         assert.equal(entry2.next.length, 1)
         assert.equal(entry2.hash, expectedHash)
       }))
 
       it('`next` parameter can be an array of strings', async(() => {
-        const entry1 = await(Entry.create(ipfs, null))
-        const entry2 = await(Entry.create(ipfs, null, [entry1.hash]))
+        const entry1 = await(Entry.create(ipfs, 'A', null))
+        const entry2 = await(Entry.create(ipfs, 'A', null, [entry1.hash]))
         assert.equal(typeof entry2.next[0] === 'string', true)
       }))
 
       it('`next` parameter can be an array of Entry instances', async(() => {
-        const entry1 = await(Entry.create(ipfs, null))
-        const entry2 = await(Entry.create(ipfs, null, [entry1]))
+        const entry1 = await(Entry.create(ipfs, 'A', null))
+        const entry2 = await(Entry.create(ipfs, 'A', null, [entry1]))
         assert.equal(typeof entry2.next[0] === 'string', true)
       }))
 
       it('`next` parameter can contain nulls and undefined objects', async(() => {
-        const entry1 = await(Entry.create(ipfs, null))
-        const entry2 = await(Entry.create(ipfs, null, [entry1, null, undefined]))
+        const entry1 = await(Entry.create(ipfs, 'A', null))
+        const entry2 = await(Entry.create(ipfs, 'A', null, [entry1, null, undefined]))
         assert.equal(typeof entry2.next[0] === 'string', true)
       }))
 
@@ -95,30 +95,47 @@ let ipfs, ipfsDaemon
 
       it('throws an error if data is not defined', async(() => {
         try {
-          const entry = await(Entry.create(ipfs))
+          const entry = await(Entry.create(ipfs, 'A'))
         } catch(e) {
           assert.equal(e.message, 'Entry requires data')
+        }
+      }))
+
+      it('throws an error if next is not an array', async(() => {
+        try {
+          const entry = await(Entry.create(ipfs, 'A', 'hello', null))
+        } catch(e) {
+          assert.equal(e.message, '\'next\' argument is not an array')
         }
       }))
     })
 
     describe('toMultihash', () => {
       it('returns an ipfs hash', async(() => {
-        const expectedHash = 'QmVb4xt7ckFFyH3qxGtR4SKo3FcBD5itfPmyTqAjrAzcW3'
-        const entry = await(Entry.create(ipfs))
+        const expectedHash = 'QmUegcHudTeVcLGKsKjmBR96ydKx4Neku36mBj4TfgVNv3'
+        const entry = await(Entry.create(ipfs, 'A'))
         const hash = await(Entry.toMultihash(ipfs, entry))
         assert.equal(hash, expectedHash)
+      }))
+
+      it('throws an error if ipfs is not defined', async(() => {
+        try {
+          const entry = await(Entry.toMultihash())
+        } catch(e) {
+          assert.equal(e.message, 'Ipfs instance not defined')
+        }
       }))
     })
 
     describe('fromMultihash', () => {
       it('creates a entry from ipfs hash', async(() => {
-        const expectedHash = 'QmRzyeUuW5F8zxmEgJG3wRPH3i3W7iwPweza7UUHhXfK93'
+        const expectedHash = 'QmTfrtKieCTyEPzfVQswkxJkfSe8h8RqAmmy7KNmqqBfx1'
         const payload1 = 'hello world'
         const payload2 = 'hello again'
-        const entry1 = await(Entry.create(ipfs, payload1))
-        const entry2 = await(Entry.create(ipfs, payload2, [entry1]))
+        const entry1 = await(Entry.create(ipfs, 'A', payload1))
+        const entry2 = await(Entry.create(ipfs, 'A', payload2, [entry1]))
         const final = await(Entry.fromMultihash(ipfs, entry2.hash))
+        assert.equal(final.id, 'A')
         assert.equal(final.payload, payload2)
         assert.equal(final.next.length, 1)
         assert.equal(final.next[0], entry1.hash)
@@ -146,17 +163,17 @@ let ipfs, ipfsDaemon
       it('returns true if entry has a child', async(() => {
         const payload1 = 'hello world'
         const payload2 = 'hello again'
-        const entry1 = await(Entry.create(ipfs, payload1))
-        const entry2 = await(Entry.create(ipfs, payload2, [entry1]))
+        const entry1 = await(Entry.create(ipfs, 'A', payload1))
+        const entry2 = await(Entry.create(ipfs, 'A', payload2, [entry1]))
         assert.equal(Entry.hasChild(entry2, entry1), true)
       }))
 
       it('returns false if entry does not have a child', async(() => {
         const payload1 = 'hello world'
         const payload2 = 'hello again'
-        const entry1 = await(Entry.create(ipfs, payload1))
-        const entry2 = await(Entry.create(ipfs, payload2))
-        const entry3 = await(Entry.create(ipfs, payload2, [entry2]))
+        const entry1 = await(Entry.create(ipfs, 'A', payload1))
+        const entry2 = await(Entry.create(ipfs, 'A', payload2))
+        const entry3 = await(Entry.create(ipfs, 'A', payload2, [entry2]))
         assert.equal(Entry.hasChild(entry2, entry1), false)
         assert.equal(Entry.hasChild(entry3, entry1), false)
         assert.equal(Entry.hasChild(entry3, entry2), true)
@@ -166,18 +183,46 @@ let ipfs, ipfsDaemon
     describe('compare', () => {
       it('returns true if entries are the same', async(() => {
         const payload1 = 'hello world'
-        const entry1 = await(Entry.create(ipfs, payload1))
-        const entry2 = await(Entry.create(ipfs, payload1))
+        const entry1 = await(Entry.create(ipfs, 'A', payload1))
+        const entry2 = await(Entry.create(ipfs, 'A', payload1))
         assert.equal(Entry.isEqual(entry1, entry2), true)
       }))
 
       it('returns true if entries are not the same', async(() => {
         const payload1 = 'hello world1'
         const payload2 = 'hello world2'
-        const entry1 = await(Entry.create(ipfs, payload1))
-        const entry2 = await(Entry.create(ipfs, payload2))
+        const entry1 = await(Entry.create(ipfs, 'A', payload1))
+        const entry2 = await(Entry.create(ipfs, 'A', payload2))
         assert.equal(Entry.isEqual(entry1, entry2), false)
       }))
     })
+
+    describe('isEntry', () => {
+      it('is an Entry', async(() => {
+        const entry = await(Entry.create(ipfs, 'A'))
+        assert.equal(Entry.isEntry(entry), true)
+      }))
+
+      it('is not an Entry - no id', async(() => {
+        const fakeEntry = { next: [], hash: 'Foo', payload: 123 }
+        assert.equal(Entry.isEntry(fakeEntry), false)
+      }))
+
+      it('is not an Entry - no next', async(() => {
+        const fakeEntry = { id: 'A', hash: 'Foo', payload: 123 }
+        assert.equal(Entry.isEntry(fakeEntry), false)
+      }))
+
+      it('is not an Entry - no hash', async(() => {
+        const fakeEntry = { id: 'A', next: [], payload: 123 }
+        assert.equal(Entry.isEntry(fakeEntry), false)
+      }))
+
+      it('is not an Entry - no payload', async(() => {
+        const fakeEntry = { id: 'A', next: [], hash: 'Foo' }
+        assert.equal(Entry.isEntry(fakeEntry), false)
+      }))
+    })
+
   })
 })

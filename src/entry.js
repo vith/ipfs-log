@@ -14,16 +14,18 @@ class Entry {
    * // { hash: "Qm...Foo", payload: "hello", next: [] }
    * @returns {Promise<Entry>}
    */
-  static create (ipfs, data = null, next = []) {
+  static create (ipfs, id, data = null, next = []) {
     if (!ipfs) throw IpfsNotDefinedError
+    if (!id) throw new Error('Entry requires an id')
     if (!next || !Array.isArray(next)) throw new Error("'next' argument is not an array")
 
     // Clean the next objects and convert to hashes
-    let nexts = next.filter((e) => e !== undefined & e !== null)
+    let nexts = next.filter((e) => e !== undefined && e !== null)
       .map((e) => e.hash ? e.hash : e)
 
     let entry = {
       hash: null, // "Qm...Foo", we'll set the hash after persisting the entry
+      id: id,
       payload: data, // Can be any JSON.stringifyable data
       next: nexts // Array of Multihashes
     }
@@ -70,6 +72,7 @@ class Entry {
       .then((data) => {
         const entry = {
           hash: hash,
+          id: data.id,
           payload: data.payload,
           next: data.next
         }
@@ -88,6 +91,18 @@ class Entry {
   }
 
   /**
+   * Check if an object is an Entry
+   * @param {Entry} obj
+   * @returns {boolean}
+   */
+  static isEntry (obj) {
+    return obj.id !== undefined &&
+      obj.next !== undefined &&
+      obj.hash !== undefined &&
+      obj.payload !== undefined
+  }
+
+  /**
    * Check if an entry equals another entry
    * @param {Entry} a
    * @param {Entry} b
@@ -95,6 +110,26 @@ class Entry {
    */
   static isEqual (a, b) {
     return a.hash === b.hash
+  }
+
+  /**
+   * Find entry's parents from an Array of entries
+   * @private
+   * @description Returns entry's parents as an Array up to the root entry
+   * @param {Log} [log] Log to search parents from
+   * @param {Entry} [entry] Entry for which to find the parents
+   * @returns {Array<Entry>}
+   */
+  static findParents (entry, entries) {
+    let stack = []
+    let parent = entries.find((e) => Entry.hasChild(e, entry))
+    let prev = entry
+    while (parent) {
+      stack.push(parent)
+      prev = parent
+      parent = entries.find((e) => Entry.hasChild(e, prev))
+    }
+    return stack
   }
 }
 

@@ -20,8 +20,8 @@ const queryLoop = () => {
 
   Promise.all([add1, add2])
     .then((res) => {
-      log1 = Log.join(ipfs, res[0], res[1], 60)
-      log2 = Log.join(ipfs, res[1], res[0], 60)
+      log1 = Log.join(res[0], res[1], 60)
+      log2 = Log.join(res[1], res[0], 60)
       totalQueries++
       lastTenSeconds++
       queriesPerSecond++
@@ -59,8 +59,8 @@ let run = (() => {
       queriesPerSecond = 0
     }, 1000)
 
-    log1 = Log.create(ipfs)
-    log2 = Log.create(ipfs)
+    log1 = Log.create()
+    log2 = Log.create()
     queryLoop()
   })
 })()
