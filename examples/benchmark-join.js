@@ -1,12 +1,13 @@
 'use strict'
 
-const Log = require('../src/log')
+const Log = require('../src/log-utils')
 // const IPFS = require('ipfs-daemon')
 const IPFS = require('ipfs-daemon/src/ipfs-node-daemon')
 
+// State
 let ipfs
-let log1
-let log2
+let log1 = Log.create('A')
+let log2 = Log.create('B')
 
 // Metrics
 let totalQueries = 0
@@ -55,12 +56,10 @@ let run = (() => {
         if (lastTenSeconds === 0) throw new Error('Problems!')
         lastTenSeconds = 0
       }
-      console.log(`${queriesPerSecond} queries per second, ${totalQueries} queries in ${seconds} seconds`)
+      console.log(`${queriesPerSecond} queries per second, ${totalQueries} queries in ${seconds} seconds. log1: ${log1.items.length}, log2: ${log2.items.length}`)
       queriesPerSecond = 0
     }, 1000)
 
-    log1 = Log.create()
-    log2 = Log.create()
     queryLoop()
   })
 })()

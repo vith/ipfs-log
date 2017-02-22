@@ -1,7 +1,4 @@
 module.exports = `DONE
-└─3
-  └─2
-    └─1
 └─EOF
   └─entryC10
     └─entryB10
@@ -24,12 +21,15 @@ module.exports = `DONE
               └─entryC4
                 └─entryB4
                   └─entryA4
+└─3
                 └─entryC3
                   └─entryB3
                     └─entryA3
+  └─2
                   └─entryC2
                     └─entryB2
                       └─entryA2
+    └─1
                     └─entryC1
                       └─entryB1
                         └─entryA1`

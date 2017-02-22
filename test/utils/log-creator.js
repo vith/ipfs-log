@@ -2,8 +2,8 @@
 
 const async = require('asyncawait/async')
 const await = require('asyncawait/await')
-const Entry = require('../src/entry')
-const Log = require('../src/log.js')
+const Entry = require('../../src/entry')
+const Log = require('../../src/log-utils.js')
 
 class LogCreator {
   static createLog1 (ipfs) {
@@ -21,17 +21,55 @@ class LogCreator {
       for(let i = 6; i <= 10; i ++) {
         logA = await(Log.append(ipfs, logA, 'entryA' + i))
       }
-      log = Log.join(log, log3)
+      log = Log.join(log, log3, -1, log.id)
       log = await(Log.append(ipfs, log, 'entryC0'))
-      log = Log.join(logA, log)
+      log = Log.join(logA, log, -1, log.id)
       return log
     })
 
     const expectedData = [ 
-      'entryA1', 'entryA2', 'entryA3', 'entryA4', 'entryA5',
-      'entryB1', 'entryB2', 'entryB3', 'entryB4', 'entryB5',
+      'entryA1', 'entryB1', 'entryA2', 'entryB2', 'entryA3', 'entryB3',
+      'entryA4', 'entryB4', 'entryA5', 'entryB5', 
+      'entryA6',
       'entryC0',
-      'entryA6', 'entryA7', 'entryA8', 'entryA9', 'entryA10',
+      'entryA7', 'entryA8', 'entryA9', 'entryA10',
+    ]
+
+    const log = await(create())
+    return { log: log, expectedData: expectedData }
+  }
+
+  static createLog2 (ipfs) {
+    const maxA = 100
+    const maxB = 10
+    const maxC = 3
+
+    const create = async(() => {
+      let logA = Log.create('A')
+      let logB = Log.create('B')
+      let log = Log.create('log')
+      for(let i = 1; i <= maxA; i ++) {
+        logA = await(Log.append(ipfs, logA, 'entryA' + i))
+        if (maxA / i % maxB === 0)
+          logA = Log.join(logA, logB)
+      }
+      for(let i = 1; i <= maxB; i ++) {
+        logB = await(Log.append(ipfs, logB, 'entryB' + i))
+      }
+      
+      let log3 = Log.join(logA, logB)
+      
+      for(let i = 1; i <= maxC; i ++) {
+        logA = await(Log.append(ipfs, logA, 'entryAA' + i))
+      }
+      
+      log = Log.join(log, log3, -1, log.id)
+      log = await(Log.append(ipfs, log, 'entryC0'))
+      log = Log.join(logA, log, -1, log.id)
+      return log
+    })
+
+    const expectedData = [ 
     ]
 
     const log = await(create())
@@ -90,7 +128,6 @@ class LogCreator {
     const log = await(create())
     return { log: log, expectedData: expectedData }
   }
-
 }
 
 module.exports = LogCreator

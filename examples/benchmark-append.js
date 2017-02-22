@@ -1,15 +1,18 @@
 'use strict'
 
-const Log = require('../src/log')
+const Log = require('../src/log-utils')
 // const IPFS = require('ipfs-daemon')
 const IPFS = require('ipfs-daemon/src/ipfs-node-daemon')
+
+// State
+let ipfs
+let log = Log.create('A')
 
 // Metrics
 let totalQueries = 0
 let seconds = 0
 let queriesPerSecond = 0
 let lastTenSeconds = 0
-let ipfs, log
 
 const queryLoop = () => {
   Log.append(ipfs, log, totalQueries.toString())
@@ -48,7 +51,6 @@ let run = (() => {
       queriesPerSecond = 0
     }, 1000)
 
-    log = Log.create()
     setImmediate(queryLoop)
   })
 })()

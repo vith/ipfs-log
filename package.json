@@ -2,7 +2,7 @@
   "name": "ipfs-log",
   "version": "2.0.0-beta.1",
   "description": "Append-only log for IPFS",
-  "main": "src/log.js",
+  "main": "src/log-utils.js",
   "author": "Haad",
   "license": "MIT",
   "repository": {
@@ -13,7 +13,8 @@
     "node": "^6.x.x"
   },
   "dependencies": {
-    "p-whilst": "^1.0.0"
+    "p-map": "~1.0.0",
+    "p-whilst": "~1.0.0"
   },
   "devDependencies": {
     "asyncawait": "^1.0.6",

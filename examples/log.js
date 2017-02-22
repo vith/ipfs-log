@@ -7,8 +7,8 @@ const ipfs = new IPFS()
 
 ipfs.on('error', (err) => console.error(err))
 ipfs.on('ready', () => {
-  let log1 = Log.create(ipfs)
-  let log2 = Log.create(ipfs)
+  let log1 = Log.create('A')
+  let log2 = Log.create('A')
 
   Log.append(ipfs, log1, 'one')
     .then((log) => {
@@ -26,11 +26,15 @@ ipfs.on('ready', () => {
     .then((log) => {
       log2 = log
       // Join the logs
-      const log3 = Log.join(ipfs, log1, log2)
+      const log3 = Log.join(log1, log2)
       console.log(log3.toString())
       // two
       // └─one
       // three
+      process.exit(0)
+    })
+    .catch((e) => {
+      console.error(e)
       process.exit(1)
     })
 })

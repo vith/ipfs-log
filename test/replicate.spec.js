@@ -4,9 +4,9 @@ const async = require('asyncawait/async')
 const await = require('asyncawait/await')
 const assert = require('assert')
 const rmrf = require('rimraf')
-const apis = require('./test-apis')
-const Log = require('../src/log.js')
-const config = require('./ipfs-daemon.config')
+const apis = require('./config/test-apis')
+const config = require('./config/ipfs-daemon.config')
+const Log = require('../src/log-utils.js')
 
 const channel = 'XXX'
 
@@ -32,7 +32,7 @@ const waitForPeers = (ipfs, channel) => {
 // until js-ipfs-api supports pubsub
 apis.filter((e, idx) => idx === 0).forEach((IpfsDaemon) => {
 
-  describe('orbit-db - Replication', function() {
+  describe('ipfs-log - Replication', function() {
     this.timeout(80000)
 
     let ipfs1, ipfs2, client1, client2, db1, db2
@@ -50,8 +50,8 @@ apis.filter((e, idx) => idx === 0).forEach((IpfsDaemon) => {
     })
 
     after(() => {
-      ipfs1.stop()
-      ipfs2.stop()
+      if (ipfs1) ipfs1.stop()
+      if (ipfs2) ipfs2.stop()
     })
 
     describe('replicates logs deterministically', function() {
@@ -67,7 +67,7 @@ apis.filter((e, idx) => idx === 0).forEach((IpfsDaemon) => {
           return
         buffer.push(message.data.toString())
         processing ++
-        const exclude = log.items.map((e) => e.hash)
+        const exclude = log.values.map((e) => e.hash)
         process.stdout.write('\r')
         process.stdout.write(`Buffer1: ${buffer1.length} - Buffer2: ${buffer2.length}`)
         const tmp = await(Log.fromMultihash(ipfs, message.data.toString(), -1, exclude))
@@ -80,7 +80,7 @@ apis.filter((e, idx) => idx === 0).forEach((IpfsDaemon) => {
           return
         buffer1.push(message.data.toString())
         processing ++
-        const exclude = log1.items.map((e) => e.hash)
+        const exclude = log1.values.map((e) => e.hash)
         process.stdout.write('\r')
         process.stdout.write(`Buffer1: ${buffer1.length} - Buffer2: ${buffer2.length}`)
         const log = await(Log.fromMultihash(ipfs1, message.data.toString()))
@@ -95,7 +95,7 @@ apis.filter((e, idx) => idx === 0).forEach((IpfsDaemon) => {
         processing ++
         process.stdout.write('\r')
         process.stdout.write(`Buffer1: ${buffer1.length} - Buffer2: ${buffer2.length}`)
-        const exclude = log2.items.map((e) => e.hash)
+        const exclude = log2.values.map((e) => e.hash)
         const log = await(Log.fromMultihash(ipfs2, message.data.toString()))
         log2 = Log.join(log2, log, -1, log2.id)
         processing --
@@ -147,14 +147,20 @@ apis.filter((e, idx) => idx === 0).forEach((IpfsDaemon) => {
 
               assert.equal(buffer1.length, amount)
               assert.equal(buffer2.length, amount)
-              assert.equal(result.items.length, amount * 2)
-              assert.equal(log1.items.length, amount)
-              assert.equal(log2.items.length, amount)
-              assert.equal(result.items[0].payload, 'B1')
-              assert.equal(result.items[result.items.length - 1].payload, 'A100')
+              assert.equal(result.length, amount * 2)
+              assert.equal(log1.length, amount)
+              assert.equal(log2.length, amount)
+              assert.equal(result.values[0].payload, 'A1')
+              assert.equal(result.values[1].payload, 'B1')
+              assert.equal(result.values[2].payload, 'A2')
+              assert.equal(result.values[3].payload, 'B2')
+              assert.equal(result.values[99].payload, 'B50')
+              assert.equal(result.values[100].payload, 'A51')
+              assert.equal(result.values[198].payload, 'A100')
+              assert.equal(result.values[199].payload, 'B100')
               done()
             } catch(e) {
-              done(e)              
+              done(e)
             }
 
           }))
