@@ -46,7 +46,7 @@ class Log {
   }
 
   /**
-   * Returns a list of heads as multihashes
+   * Returns an array of heads as multihashes
    * @returns {Array<string>}
    */
   get heads () {
@@ -116,7 +116,7 @@ class LogUtils {
 
     // If entries were given but not the heads, find them
     if (Array.isArray(entries) && !heads) {
-      heads = EntryCollection.findHeads(entries)
+      heads = EntryCollection.findHeads(entries).map((e) => e.hash)
     }
 
     return new Log(id, entries, heads)
@@ -142,7 +142,8 @@ class LogUtils {
     if (!log.heads || !log.id || !log.items) throw new Error('Not a Log instance')
 
     // Create the entry
-    return Entry.create(ipfs, log.id, data, log.heads)
+    const seq = EntryCollection.getLatestSeqNumber(log.items) + 1
+    return Entry.create(ipfs, log.id, seq, data, log.heads)
       .then((entry) => {
         // Add the entry to the previous log entries
         const items = log.items.concat([entry])
@@ -176,11 +177,23 @@ class LogUtils {
     // If size is not specified, join all entries by default
     size = size && size > -1 ? size : a.items.length + b.items.length
 
-    // If id was not provided, use the id of the first head entry
-    id = id || [a, b].sort((a, b) => a.id > b.id)[0].id
+    const sortedById = [a, b].sort((a, b) => a.id > b.id)
 
-    // Combine the entries from the two logs and sort them
-    const entries = a.items.concat(b.items)
+    // If id was not provided, use the id of the first head entry
+    id = id || sortedById[0].id
+
+    // Combine the entries from the two logs, take only unique entries
+    // and sort the entries by sequence and id
+    let entries = sortedById[0].items.concat(sortedById[1].items)
+      .reduce((res, e) => {
+        if (res.findIndex(a => a.hash === e.hash) === -1) {
+          res.push(e)
+        }
+        return res
+      }, [])
+      .sort((a, b) => a.seq < b.seq && a.id <= b.id)
+
+    // Sort the entries
     const sorted = EntryCollection.sort(entries)
     // Create a new log, cap the size at given length
     const log = LogUtils.create(id, sorted.slice(-size))
@@ -212,26 +225,22 @@ class LogUtils {
     if (!ipfs) throw IpfsNotDefinedError()
     if (!log) throw LogNotDefinedError()
 
-    // Get all next pointers as an array
-    const nexts = log.items.reduce((res, e) => res.concat(e.next), [])
-
-    // Array of hashes of all entries in the log
-    const hashes = log.items.map((e) => e.hash)
-
-    // Find tails (entries that point to an entry that is not in the log)
-    const tails = nexts
-      .filter((e) => !hashes.includes(e))
-      .sort((a, b) => a > b)
+    const tails = EntryCollection.findTailHashes(log.items)
 
     if (tails.length === 0) {
       return Promise.resolve(LogUtils.create(log.id, log.items, log.heads))
     }
 
     // Fetch entries starting from all tail entries
-    return LogUtils.fetchAll(ipfs, tails, Math.max(length, -1), log.items.map((e) => e.hash))
+    // return LogUtils.fetchAll(ipfs, tails[0], Math.max(length, -1), log.items)
+    const prevLength = log.items.length
+    return LogUtils.fetchAll(ipfs, tails, Math.max(length * tails.length, -1), log.items)
       .then((entries) => {
-        const sorted = EntryCollection.sort(entries.concat(log.items))
-        const result = LogUtils.create(log.id, sorted)
+        let sorted = EntryCollection.sort(log.items.concat(entries))
+        const finalArr = length > -1 
+          ? sorted.slice(-(prevLength + length))
+          : sorted
+        const result = LogUtils.create(log.id, finalArr)
         return result
       })
   }
@@ -239,9 +248,10 @@ class LogUtils {
   /**
    * Create a new log starting from an entry
    * @param {IPFS} ipfs An IPFS instance
-   * @param {string|Entry|Array<string|Entry>} entries An entry or an array of entries to fetch a log from
+   * @param {Array<Entry>} entries An entry or an array of entries to fetch a log from
    * @param {Number} [length=-1] How many entries to include. Default: infinite.
-   * @param {function(hash, entry, parent, depth)} onProgressCallback
+   * @param {Array<Entry|string>} [exclude] Entries to not fetch (cached)
+   * @param {function(hash, entry, parent, depth)} [onProgressCallback]
    * @returns {Promise<Log>}
    */
   static fromEntry (ipfs, entries, length = -1, exclude, onProgressCallback) {
@@ -251,17 +261,27 @@ class LogUtils {
       entries = [entries]
     }
 
-    const hashes = entries.map((e) => e.hash ? e.hash : e)
+    // Make sure we only have Entry objects as input
+    entries.forEach((e) => {
+      if (!Entry.isEntry(e)) throw new Error('\'entries\' need to be an array of Entry instances')
+    })
 
-    return LogUtils.fetchAll(ipfs, hashes, length, exclude)
+    // Make sure we pass hashes instead of objects to the fetcher function
+    exclude = exclude ? exclude.map((e) => e.hash ? e.hash : e) : exclude
+
+    // Fetch given length
+    const amount = length - entries.length
+    const hashes = entries.map((e) => e.hash)
+    const nexts = entries.reduce((res, e) => {
+      e.next.forEach((n) => res.push(n))
+      return res
+    }, [])
+
+    return LogUtils.fetchAll(ipfs, nexts, amount, exclude)
       .then((items) => {
-        if (items.length === 0) {
-          items = hashes.concat(exclude)
-            .map((e) => entries.find((a) => a.hash === e))
-            .filter((e) => e !== undefined)
-        }
-        const sorted = EntryCollection.sort(items)
-        const entry = items.find((e) => hashes.includes(e.hash))
+        const all = items.concat(entries)
+        const sorted = EntryCollection.sort(all)
+        const entry = all.find((e) => hashes.includes(e.hash))
         const log = LogUtils.create(entry.id, sorted)
         return log
       })
@@ -321,14 +341,16 @@ class LogUtils {
    * @param {function(hash, entry, parent, depth)} onProgressCallback
    * @returns {Promise<Array<Entry>>}
    */
-  static fetchAll (ipfs, hashes, amount, exclude = []) {
+  static fetchAll (ipfs, hashes, amount, exclude = [], timeout = 30000) {
     let result = []
     let cache = {}
-    let loadingQueue = Array.isArray(hashes) ? hashes.slice() : [hashes]
+    let loadingQueue = Array.isArray(hashes) 
+      ? hashes.slice() 
+      : [hashes]
 
     // Add entries that we don't need to fetch to the "cache"
     exclude.forEach((e) => {
-      cache[e] = true
+      cache[e.hash] = e
     })
 
     const shouldFetchMore = () => {
@@ -343,13 +365,20 @@ class LogUtils {
         return Promise.resolve(result)
       }
 
-      return Entry.fromMultihash(ipfs, hash)
-        .then((entry) => {
-          entry.next.forEach((f, i) => loadingQueue.push(f))
-          result.push(entry)
-          cache[hash] = true
-          return result
-        })
+      return new Promise((resolve, reject) => {
+        // Resolve the promise after a timeout in order to
+        // not get stuck loading a block that is unreachable
+        setTimeout(() => resolve(result), timeout)
+
+        // Load the entry
+        Entry.fromMultihash(ipfs, hash)
+          .then((entry) => {
+            entry.next.forEach((f) => loadingQueue.push(f))
+            result.push(entry)
+            cache[hash] = entry
+            resolve(result)
+          })
+      })
     }
 
     return whilst(shouldFetchMore, fetchEntry)

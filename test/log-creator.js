@@ -21,15 +21,15 @@ class LogCreator {
       for(let i = 6; i <= 10; i ++) {
         logA = await(Log.append(ipfs, logA, 'entryA' + i))
       }
-      log = Log.join(log, log3)
+      log = Log.join(log, log3, -1, log.id)
       log = await(Log.append(ipfs, log, 'entryC0'))
-      log = Log.join(logA, log)
+      log = Log.join(logA, log, -1, log.id)
       return log
     })
 
     const expectedData = [ 
-      'entryA1', 'entryA2', 'entryA3', 'entryA4', 'entryA5',
-      'entryB1', 'entryB2', 'entryB3', 'entryB4', 'entryB5',
+      'entryA1', 'entryB1', 'entryA2', 'entryB2', 'entryA3', 'entryB3',
+      'entryA4', 'entryB4', 'entryA5', 'entryB5', 
       'entryC0',
       'entryA6', 'entryA7', 'entryA8', 'entryA9', 'entryA10',
     ]

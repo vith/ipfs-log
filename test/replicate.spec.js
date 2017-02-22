@@ -32,7 +32,7 @@ const waitForPeers = (ipfs, channel) => {
 // until js-ipfs-api supports pubsub
 apis.filter((e, idx) => idx === 0).forEach((IpfsDaemon) => {
 
-  describe('orbit-db - Replication', function() {
+  describe('ipfs-log - Replication', function() {
     this.timeout(80000)
 
     let ipfs1, ipfs2, client1, client2, db1, db2
@@ -50,8 +50,8 @@ apis.filter((e, idx) => idx === 0).forEach((IpfsDaemon) => {
     })
 
     after(() => {
-      ipfs1.stop()
-      ipfs2.stop()
+      if (ipfs1) ipfs1.stop()
+      if (ipfs2) ipfs2.stop()
     })
 
     describe('replicates logs deterministically', function() {
@@ -150,11 +150,17 @@ apis.filter((e, idx) => idx === 0).forEach((IpfsDaemon) => {
               assert.equal(result.items.length, amount * 2)
               assert.equal(log1.items.length, amount)
               assert.equal(log2.items.length, amount)
-              assert.equal(result.items[0].payload, 'B1')
-              assert.equal(result.items[result.items.length - 1].payload, 'A100')
+              assert.equal(result.items[0].payload, 'A1')
+              assert.equal(result.items[1].payload, 'B1')
+              assert.equal(result.items[2].payload, 'A2')
+              assert.equal(result.items[3].payload, 'B2')
+              assert.equal(result.items[99].payload, 'B50')
+              assert.equal(result.items[100].payload, 'A51')
+              assert.equal(result.items[198].payload, 'A100')
+              assert.equal(result.items[199].payload, 'B100')
               done()
             } catch(e) {
-              done(e)              
+              done(e)
             }
 
           }))

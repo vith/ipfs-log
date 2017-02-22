@@ -89,9 +89,9 @@ apis.forEach((IpfsDaemon) => {
 
     it('load only 99 items from a log with 100 items', async(() => {
       const count = 100
-      let log = Log.create()
-      let log2 = Log.create()
-      let log3 = Log.create()
+      let log = Log.create('A')
+      let log2 = Log.create('B')
+      let log3 = Log.create('C')
       for (let i = 1; i <= count; i ++) {
         log = await(Log.append(ipfs, log, 'hello' + i))
         if (i % 10 === 0) {
@@ -108,9 +108,9 @@ apis.forEach((IpfsDaemon) => {
 
     it('load only 10 items from a log with 100 items', async(() => {
       const count = 100
-      let log = Log.create()
-      let log2 = Log.create()
-      let log3 = Log.create()
+      let log = Log.create('A')
+      let log2 = Log.create('B')
+      let log3 = Log.create('C')
       for (let i = 1; i <= count; i ++) {
         log = await(Log.append(ipfs, log, 'hello' + i))
         if (i % 10 === 0) {
