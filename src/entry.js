@@ -74,8 +74,12 @@ class Entry {
   static fromMultihash (ipfs, hash) {
     if (!ipfs) throw IpfsNotDefinedError()
     if (!hash) throw new Error(`Invalid hash: ${hash}`)
+    console.log("loading entry")
     return ipfs.object.get(hash, { enc: 'base58' })
-      .then((obj) => JSON.parse(obj.toJSON().data))
+      .then((obj) => {
+        console.log("entry loaded:", obj.toJSON())
+        return JSON.parse(obj.toJSON().data)
+      })
       .then((data) => {
         const entry = {
           hash: hash,
